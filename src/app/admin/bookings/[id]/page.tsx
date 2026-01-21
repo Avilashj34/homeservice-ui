@@ -25,6 +25,7 @@ interface BookingDetail {
     comments: string;
     created_at: string;
     tracking_id: string;
+    user_comment: string;
 }
 
 export default function BookingDetailPage() {
@@ -318,8 +319,16 @@ export default function BookingDetailPage() {
                             </CardContent>
                         </Card>
 
+                        {booking.user_comment && (
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-900">
+                                <strong className="block text-xs uppercase text-blue-400 mb-1">Customer Instructions:</strong>
+                                {booking.user_comment}
+                            </div>
+                        )}
+
                         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-sm text-yellow-800">
-                            <strong>Note:</strong> {booking.comments}
+                            <strong className="block text-xs uppercase text-yellow-600 mb-1">Internal Team Notes:</strong>
+                            {booking.comments || "No internal notes."}
                         </div>
                     </div>
                 </div>
