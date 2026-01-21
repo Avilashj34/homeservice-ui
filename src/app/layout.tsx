@@ -5,6 +5,11 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
+    icons: {
+        icon: "/favicon.ico",
+        shortcut: "/favicon.ico",
+        apple: "/apple-icon.png",
+    },
     title: "Home Service Application",
     description: "Book home services easily",
 };
