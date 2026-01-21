@@ -1,6 +1,6 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 
-const API_BASE_URL = "http://localhost:8000"; // Should be env var in production
+const API_BASE_URL = "https://homeapi.canyfix.com/"; // Should be env var in production
 
 class ApiService {
     private axiosInstance: AxiosInstance;
