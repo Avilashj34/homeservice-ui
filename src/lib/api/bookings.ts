@@ -29,7 +29,7 @@ export const MultiBookingAPI = {
         formData.append("file", file);
         if (booking_id) formData.append("booking_id", booking_id.toString());
 
-        return apiService.post<{ id: number, url: string, type: string }>(`/bookings/upload?booking_id=${booking_id || ''}`, formData, {
+        return apiService.post<{ id: number, url: string, type: string }>(`/bookings/upload?booking_id=${booking_id || 0}`, formData, {
             headers: { "Content-Type": "multipart/form-data" }
         });
     },

@@ -223,6 +223,42 @@ export default function BookingDetailPage() {
 
                     {/* Right Column: Financials & Extras */}
                     <div className="space-y-4 md:space-y-6">
+                        {/* Tracking Card */}
+                        <Card className="border-gray-200 border-l-4 border-l-blue-900">
+                            <CardHeader className="bg-gray-100/50 border-b border-gray-100 p-4 md:p-6">
+                                <CardTitle className="text-base flex items-center gap-2">
+                                    <span>📡</span> Customer Tracking
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-4 md:p-6 space-y-3">
+                                <div className="flex items-center justify-between bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
+                                    <code className="text-sm font-bold text-blue-900 truncate mr-2 select-all">
+                                        {booking.tracking_id}
+                                    </code>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                            const link = `${window.location.origin}/track/${booking.tracking_id}`;
+                                            navigator.clipboard.writeText(link);
+                                            alert("Link copied: " + link);
+                                        }}
+                                        className="h-8 text-xs shrink-0 border-blue-200 hover:bg-blue-50 hover:text-blue-900 font-medium"
+                                    >
+                                        Copy Link
+                                    </Button>
+                                </div>
+                                <p className="text-xs text-slate-500 leading-relaxed">
+                                    Share this link with the customer. They can view status updates, share live location, and add comments without logging in.
+                                </p>
+                                <div className="mt-2 text-right">
+                                    <Link href={`/track/${booking.tracking_id}`} target="_blank" className="text-xs font-bold text-blue-900 hover:underline flex items-center justify-end gap-1">
+                                        Open Tracking Page →
+                                    </Link>
+                                </div>
+                            </CardContent>
+                        </Card>
+
                         <Card className="border-gray-200">
                             <CardHeader className="bg-gray-100/50 border-b border-gray-100 p-4 md:p-6">
                                 <CardTitle className="text-base">Payment Details</CardTitle>
