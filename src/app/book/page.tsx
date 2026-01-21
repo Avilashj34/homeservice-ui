@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ServiceAPI } from "@/lib/api/services";
 import { BookingCreate, Service } from "@/types";
@@ -11,7 +11,7 @@ import Link from "next/link";
 // Re-import MultiBookingAPI from bookings layout separate file
 import { MultiBookingAPI as BookingClient } from "@/lib/api/bookings";
 
-export default function UnifiedBookingPage() {
+function BookingContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const preSelectedServiceId = searchParams.get("service_id");
@@ -277,5 +277,13 @@ export default function UnifiedBookingPage() {
                 </form>
             </div>
         </main>
+    );
+}
+
+export default function UnifiedBookingPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+            <BookingContent />
+        </Suspense>
     );
 }
