@@ -17,6 +17,15 @@ export interface Booking {
     status?: { name: string };
     service_name?: string;
     user_comment?: string;
+    assigned_to?: TeamMember;
+    assigned_to_id?: number;
+}
+
+export interface TeamMember {
+    id: number;
+    name: string;
+    email: string;
+    role?: string;
 }
 
 export interface BookingCreate {
@@ -32,6 +41,7 @@ export interface BookingCreate {
     comments?: string;
     media_ids?: number[];
     user_comment?: string;
+    assigned_to_id?: number;
 }
 
 export interface Status {
@@ -50,4 +60,10 @@ export interface Service {
     name: string;
     description?: string;
     base_price?: number;
+}
+
+export interface TeamMemberCreate {
+    name: string;
+    email: string;
+    role?: string;
 }

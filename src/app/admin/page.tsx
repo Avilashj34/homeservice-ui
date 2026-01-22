@@ -6,15 +6,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { Phone, MessageCircle, Calendar, MapPin, RefreshCw } from "lucide-react";
+import Link from "next/link";
 import { MultiBookingAPI } from "@/lib/api/bookings";
 import { ServiceAPI } from "@/lib/api/services";
 import { StatusAPI } from "@/lib/api/status";
-import { Booking, Status, Service, BookingCreate } from "@/types";
+import { TeamAPI } from "@/lib/api/team";
+import { Booking, Status, Service, BookingCreate, TeamMember } from "@/types";
 
 export default function AdminPage() {
     const [bookings, setBookings] = useState<Booking[]>([]);
     const [statuses, setStatuses] = useState<Status[]>([]);
     const [services, setServices] = useState<Service[]>([]);
+    const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
     const [loading, setLoading] = useState(true);
 
     // Filters
@@ -22,6 +25,7 @@ export default function AdminPage() {
     const [statusFilter, setStatusFilter] = useState("1");
     const [dateFilter, setDateFilter] = useState("");
     const [serviceFilter, setServiceFilter] = useState("");
+    const [assignedToFilter, setAssignedToFilter] = useState("");
 
     // Modals
     // Modals
@@ -54,24 +58,27 @@ export default function AdminPage() {
             fetchData();
         }, 500);
         return () => clearTimeout(timer);
-    }, [search, statusFilter, dateFilter, serviceFilter]);
+    }, [search, statusFilter, dateFilter, serviceFilter, assignedToFilter]);
 
     const fetchData = async () => {
         try {
             setLoading(true);
-            const [bookingsData, statusesData, servicesData] = await Promise.all([
+            const [bookingsData, statusesData, servicesData, teamMembersData] = await Promise.all([
                 MultiBookingAPI.getAll({
                     search: search || undefined,
                     status_id: statusFilter ? Number(statusFilter) : undefined,
                     date: dateFilter || undefined,
-                    service_id: serviceFilter ? Number(serviceFilter) : undefined
+                    service_id: serviceFilter ? Number(serviceFilter) : undefined,
+                    assigned_to_id: assignedToFilter ? Number(assignedToFilter) : undefined
                 }),
                 StatusAPI.getAll(),
-                ServiceAPI.getAll()
+                ServiceAPI.getAll(),
+                TeamAPI.getAll()
             ]);
             setBookings(bookingsData);
             setStatuses(statusesData);
             setServices(servicesData);
+            setTeamMembers(teamMembersData);
         } catch (err) {
             console.error("Failed to fetch data", err);
         } finally {
@@ -131,6 +138,7 @@ export default function AdminPage() {
                 address: newBooking.address || undefined,
                 quote_price: newBooking.quote_price,
                 media_ids: uploadedMedia.map(m => m.id),
+                assigned_to_id: newBooking.assigned_to_id,
                 latitude: undefined, // Send undefined to let backend handle it as null
                 longitude: undefined
             };
@@ -179,6 +187,11 @@ export default function AdminPage() {
                         <Button onClick={() => setIsStatusModalOpen(true)} variant="outline" className="text-black border-black hover:bg-gray-100 flex-shrink-0">
                             + New Status
                         </Button>
+                        <Link href="/admin/team">
+                            <Button variant="outline" className="text-black border-black hover:bg-gray-100 flex-shrink-0">
+                                Manage Team
+                            </Button>
+                        </Link>
                         <Button onClick={() => setIsBookingModalOpen(true)} className="bg-black text-white hover:bg-gray-800 flex-shrink-0">
                             + New Booking
                         </Button>
@@ -222,8 +235,16 @@ export default function AdminPage() {
                         <option value="">All Services</option>
                         {services.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                     </select>
+                    <select
+                        className="h-11 rounded-md border border-gray-200 bg-gray-50 px-4 text-sm outline-none focus:border-black transition-colors min-w-[140px]"
+                        value={assignedToFilter}
+                        onChange={(e) => setAssignedToFilter(e.target.value)}
+                    >
+                        <option value="">All Team</option>
+                        {teamMembers.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                    </select>
                     <Button
-                        onClick={() => { setSearch(""); setStatusFilter("1"); setDateFilter(""); setServiceFilter(""); }}
+                        onClick={() => { setSearch(""); setStatusFilter("1"); setDateFilter(""); setServiceFilter(""); setAssignedToFilter(""); }}
                         variant="outline"
                         className="h-11 border-gray-200 hover:bg-gray-100 hover:text-black"
                     >
@@ -529,6 +550,18 @@ export default function AdminPage() {
                                     onChange={e => setNewBooking({ ...newBooking, quote_price: parseFloat(e.target.value) })}
                                 />
                             </div>
+                        </div>
+
+                        <div className="mt-4">
+                            <label className="text-xs font-semibold text-gray-500 mb-1 block">ASSIGN TO TEAM MEMBER</label>
+                            <select
+                                className="w-full h-10 rounded-md border border-gray-300 bg-white px-3 text-sm focus:border-black outline-none"
+                                value={newBooking.assigned_to_id || ""}
+                                onChange={e => setNewBooking({ ...newBooking, assigned_to_id: e.target.value ? parseInt(e.target.value) : undefined })}
+                            >
+                                <option value="">Unassigned</option>
+                                {teamMembers.map(m => <option key={m.id} value={m.id}>{m.name} ({m.role})</option>)}
+                            </select>
                         </div>
                     </div>
 

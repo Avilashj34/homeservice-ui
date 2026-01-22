@@ -8,7 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
-import { Booking } from "@/types";
+import { Booking, TeamMember } from "@/types";
+import { TeamAPI } from "@/lib/api/team";
 
 interface BookingDetail {
     id: number;
@@ -46,6 +47,7 @@ export default function BookingDetailPage() {
 
     const [services, setServices] = useState<any[]>([]);
     const [statuses, setStatuses] = useState<any[]>([]);
+    const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
 
     useEffect(() => {
         if (id) {
@@ -78,14 +80,16 @@ export default function BookingDetailPage() {
     const fetchBooking = async () => {
         try {
             const bookingData = await MultiBookingAPI.getById(Number(id));
-            const [servicesData, statusesData] = await Promise.all([
+            const [servicesData, statusesData, teamMembersData] = await Promise.all([
                 // I need ServiceAPI and StatusAPI imports
                 import("@/lib/api/services").then(m => m.ServiceAPI.getAll()),
-                import("@/lib/api/status").then(m => m.StatusAPI.getAll())
+                import("@/lib/api/status").then(m => m.StatusAPI.getAll()),
+                TeamAPI.getAll()
             ]);
             setBooking(bookingData);
             setServices(servicesData);
             setStatuses(statusesData);
+            setTeamMembers(teamMembersData);
         } catch (err) {
             console.error("Failed to load booking", err);
         } finally {
@@ -192,6 +196,18 @@ export default function BookingDetailPage() {
                                 <div className="sm:col-span-2">
                                     <label className="text-xs font-bold text-gray-400 uppercase block mb-1">Appointment Time</label>
                                     <p className="text-base md:text-lg font-medium">{booking.time_slot ? new Date(booking.time_slot).toLocaleString() : "N/A"}</p>
+                                </div>
+                                <div className="sm:col-span-2 pt-4 border-t border-gray-100">
+                                    <label className="text-xs font-bold text-gray-400 uppercase block mb-1">Assigned Team Member</label>
+                                    <div className="flex items-center gap-2">
+                                        <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 text-xs font-bold">
+                                            {booking.assigned_to ? booking.assigned_to.name.charAt(0) : "?"}
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-bold text-gray-900">{booking.assigned_to ? booking.assigned_to.name : "Unassigned"}</p>
+                                            {booking.assigned_to && <p className="text-xs text-gray-500">{booking.assigned_to.email}</p>}
+                                        </div>
+                                    </div>
                                 </div>
                             </CardContent>
                         </Card>
@@ -484,6 +500,18 @@ export default function BookingDetailPage() {
                                 value={updateForm.final_price || ''}
                                 onChange={e => setUpdateForm({ ...updateForm, final_price: parseFloat(e.target.value) })}
                             />
+                        </div>
+
+                        <div>
+                            <label className="text-xs font-semibold text-gray-500 mb-1 block">ASSIGNED TEAME MEMBER</label>
+                            <select
+                                className="w-full h-10 rounded-md border border-gray-300 bg-white px-3 text-sm focus:border-black outline-none"
+                                value={updateForm.assigned_to_id || (booking?.assigned_to?.id) || ""}
+                                onChange={e => setUpdateForm({ ...updateForm, assigned_to_id: e.target.value ? parseInt(e.target.value) : undefined })}
+                            >
+                                <option value="">Unassigned</option>
+                                {teamMembers.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                            </select>
                         </div>
                     </div>
 

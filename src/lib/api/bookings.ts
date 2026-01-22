@@ -2,12 +2,13 @@ import { apiService } from "@/lib/api_service";
 import { Booking, BookingCreate } from "@/types";
 
 export const MultiBookingAPI = {
-    getAll: async (params?: { search?: string; status_id?: number; date?: string; service_id?: number }): Promise<Booking[]> => {
+    getAll: async (params?: { search?: string; status_id?: number; date?: string; service_id?: number; assigned_to_id?: number }): Promise<Booking[]> => {
         const query = new URLSearchParams();
         if (params?.search) query.append("search", params.search);
         if (params?.status_id) query.append("status_id", params.status_id.toString());
         if (params?.date) query.append("date", params.date);
         if (params?.service_id) query.append("service_id", params.service_id.toString());
+        if (params?.assigned_to_id) query.append("assigned_to_id", params.assigned_to_id.toString());
 
         return apiService.get<Booking[]>(`/bookings/?${query.toString()}`);
     },
