@@ -37,5 +37,9 @@ export const MultiBookingAPI = {
 
     track: async (tracking_id: string): Promise<Booking> => {
         return apiService.get<Booking>(`/bookings/track/${tracking_id}`);
+    },
+
+    delete: async (id: number): Promise<void> => {
+        return apiService.delete<void>(`/bookings/${id}`);
     }
 };

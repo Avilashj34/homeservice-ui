@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { Booking, TeamMember } from "@/types";
 import { TeamAPI } from "@/lib/api/team";
+import { CommentsAPI, Comment } from "@/lib/api/comments";
 
 interface BookingDetail {
     id: number;
@@ -48,14 +49,27 @@ export default function BookingDetailPage() {
     const [services, setServices] = useState<any[]>([]);
     const [statuses, setStatuses] = useState<any[]>([]);
     const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+    const [comments, setComments] = useState<Comment[]>([]);
+    const [newCommentText, setNewCommentText] = useState("");
+    const [notifyPhones, setNotifyPhones] = useState<string[]>([]);
 
     useEffect(() => {
         if (id) {
             fetchBooking();
             // Fetch services and statuses for dropdowns
             fetchMetadata();
+            fetchComments();
         }
     }, [id]);
+
+    const fetchComments = async () => {
+        try {
+            const data = await CommentsAPI.getAll(Number(id));
+            setComments(data);
+        } catch (e) {
+            console.error("Failed to fetch comments", e);
+        }
+    };
 
     useEffect(() => {
         if (booking) {
@@ -110,20 +124,13 @@ export default function BookingDetailPage() {
             const payload = {
                 ...updateForm,
                 time_slot: isoDate,
-                // Media is handled via separate upload api usually, but for linking new ones:
-                // If the user uploaded files in the modal, they are already linked via booking_id? 
-                // Yes, if I pass booking_id to upload. 
-                // But wait, if I upload in "New Booking" I send media_ids.
-                // In "Update", user asked: "upload api will have the bookingid in it... store it".
-                // So the upload itself links it. I don't need to send media_ids in Update payload necessarily, unless I need to explicitly link them if they weren't linked?
-                // The upload backend change I made links them directly. So I just need to refresh booking after upload?
-                // Actually the user said "If booking id is there store it".
-                // I will just refetch booking after update.
+                notify_phones: notifyPhones
             };
 
             await MultiBookingAPI.update(booking.id, payload);
             setIsUpdateModalOpen(false);
             setUploadedMedia([]);
+            setNotifyPhones([]);
             fetchBooking(); // Refresh data
         } catch (e) {
             alert("Failed to update booking");
@@ -138,15 +145,29 @@ export default function BookingDetailPage() {
                 const file = e.target.files[0];
                 const response = await MultiBookingAPI.upload(file, booking.id);
                 setUploadedMedia([...uploadedMedia, response]);
-                // Since it's linked automatically backend side, maybe I should just refresh the booking media list?
-                // But for UI feedback I show it in "uploadedMedia" list temporarily.
-                // The user logic implies "upload & link immediately".
-                // So I should probably just simple refresh booking to show it in the main list?
-                // Or just show it in the modal list.
             } catch (err) {
                 console.error("Upload failed", err);
                 alert("Upload failed");
             }
+        }
+    };
+
+    const [commentNotifyPhones, setCommentNotifyPhones] = useState<string[]>([]);
+
+    const handleAddComment = async () => {
+        if (!newCommentText.trim() || !id) return;
+        try {
+            await CommentsAPI.create(Number(id), {
+                text: newCommentText,
+                author_name: "Admin",
+                notify_phones: commentNotifyPhones
+            });
+            setNewCommentText("");
+            setCommentNotifyPhones([]);
+            fetchComments();
+        } catch (e) {
+            console.error("Failed to add comment", e);
+            alert("Failed to post comment");
         }
     };
 
@@ -207,6 +228,77 @@ export default function BookingDetailPage() {
                                             <p className="text-sm font-bold text-gray-900">{booking.assigned_to ? booking.assigned_to.name : "Unassigned"}</p>
                                             {booking.assigned_to && <p className="text-xs text-gray-500">{booking.assigned_to.email}</p>}
                                         </div>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        <Card className="border-gray-200">
+                            <CardHeader className="bg-gray-100/50 border-b border-gray-100 p-4 md:p-6 flex flex-row items-center justify-between">
+                                <CardTitle className="text-base">Internal Team Comments</CardTitle>
+                                <span className="text-xs bg-gray-200 px-2 py-1 rounded-full text-gray-600 font-bold">{comments.length}</span>
+                            </CardHeader>
+                            <CardContent className="p-4 md:p-6 space-y-4">
+                                <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                                    {comments.length === 0 ? (
+                                        <div className="text-center py-8 text-gray-400 text-sm">No internal comments yet.</div>
+                                    ) : (
+                                        comments.map((comment, index) => (
+                                            <div key={comment.id} className="flex gap-3 text-sm">
+                                                <div className="h-8 w-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xs shrink-0 uppercase border border-blue-200">
+                                                    {comment.author_name.charAt(0)}
+                                                </div>
+                                                <div className="bg-gray-50 p-3 rounded-lg border border-gray-100 w-full hover:bg-white transition-colors">
+                                                    <div className="flex justify-between items-center mb-1">
+                                                        <span className="font-bold text-gray-900 text-xs">{comment.author_name}</span>
+                                                        <span className="text-[10px] text-gray-400">{new Date(comment.created_at).toLocaleString()}</span>
+                                                    </div>
+                                                    <p className="text-gray-700 leading-relaxed">{comment.text}</p>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                                <div className="pt-4 border-t border-gray-100">
+                                    <div className="flex gap-4 mb-3 px-1">
+                                        <span className="text-xs font-bold text-gray-400 uppercase tracking-wider self-center mr-2">Notify Team:</span>
+                                        {[
+                                            { name: "Karan", phone: "9326939154" },
+                                            { name: "Rohit", phone: "7021177486" }
+                                        ].map((person) => (
+                                            <label key={person.name} className="flex items-center gap-1.5 cursor-pointer bg-gray-50 px-2 py-1 rounded border border-gray-100 hover:bg-gray-100 transition-colors">
+                                                <input
+                                                    type="checkbox"
+                                                    className="rounded border-gray-300 text-black focus:ring-black h-3.5 w-3.5"
+                                                    onChange={(e) => {
+                                                        const current = commentNotifyPhones;
+                                                        if (e.target.checked) {
+                                                            setCommentNotifyPhones([...current, person.phone]);
+                                                        } else {
+                                                            setCommentNotifyPhones(current.filter(p => p !== person.phone));
+                                                        }
+                                                    }}
+                                                    checked={commentNotifyPhones.includes(person.phone)}
+                                                />
+                                                <span className="text-xs font-medium text-gray-700">{person.name}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <Input
+                                            placeholder="Type an internal note..."
+                                            value={newCommentText}
+                                            onChange={(e) => setNewCommentText(e.target.value)}
+                                            className="bg-white"
+                                            onKeyDown={async (e) => {
+                                                if (e.key === 'Enter' && newCommentText.trim()) {
+                                                    await handleAddComment();
+                                                }
+                                            }}
+                                        />
+                                        <Button onClick={handleAddComment} disabled={!newCommentText.trim()} className="bg-black hover:bg-gray-800 text-white shadow-sm shrink-0">
+                                            Post
+                                        </Button>
                                     </div>
                                 </div>
                             </CardContent>
@@ -342,10 +434,50 @@ export default function BookingDetailPage() {
                             </div>
                         )}
 
-                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-sm text-yellow-800">
-                            <strong className="block text-xs uppercase text-yellow-600 mb-1">Internal Team Notes:</strong>
-                            {booking.comments || "No internal notes."}
-                        </div>
+                        <Card className="border-gray-200">
+                            <CardHeader className="bg-gray-100/50 border-b border-gray-100 p-4 md:p-6 flex flex-row items-center justify-between">
+                                <CardTitle className="text-base">Internal Team Comments</CardTitle>
+                                <span className="text-xs bg-gray-200 px-2 py-1 rounded-full text-gray-600 font-bold">{comments.length}</span>
+                            </CardHeader>
+                            <CardContent className="p-4 md:p-6 space-y-4">
+                                <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                                    {comments.length === 0 ? (
+                                        <div className="text-center py-8 text-gray-400 text-sm">No internal comments yet.</div>
+                                    ) : (
+                                        comments.map((comment, index) => (
+                                            <div key={comment.id} className="flex gap-3 text-sm">
+                                                <div className="h-8 w-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xs shrink-0 uppercase border border-blue-200">
+                                                    {comment.author_name.charAt(0)}
+                                                </div>
+                                                <div className="bg-gray-50 p-3 rounded-lg border border-gray-100 w-full hover:bg-white transition-colors">
+                                                    <div className="flex justify-between items-center mb-1">
+                                                        <span className="font-bold text-gray-900 text-xs">{comment.author_name}</span>
+                                                        <span className="text-[10px] text-gray-400">{new Date(comment.created_at).toLocaleString()}</span>
+                                                    </div>
+                                                    <p className="text-gray-700 leading-relaxed">{comment.text}</p>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                                <div className="pt-4 border-t border-gray-100 flex gap-2">
+                                    <Input
+                                        placeholder="Type an internal note..."
+                                        value={newCommentText}
+                                        onChange={(e) => setNewCommentText(e.target.value)}
+                                        className="bg-white"
+                                        onKeyDown={async (e) => {
+                                            if (e.key === 'Enter' && newCommentText.trim()) {
+                                                await handleAddComment();
+                                            }
+                                        }}
+                                    />
+                                    <Button onClick={handleAddComment} disabled={!newCommentText.trim()} className="bg-black hover:bg-gray-800 text-white shadow-sm shrink-0">
+                                        Post
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
                     </div>
                 </div>
             </div>
@@ -512,6 +644,36 @@ export default function BookingDetailPage() {
                                 <option value="">Unassigned</option>
                                 {teamMembers.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
                             </select>
+                        </div>
+
+                        {/* Notifications */}
+                        <div className="mt-4 bg-blue-50/50 p-3 rounded-lg border border-blue-100">
+                            <label className="text-xs font-bold text-blue-800 mb-2 block flex items-center gap-1">
+                                <span>🔔 SEND NOTIFICATIONS</span>
+                            </label>
+                            <div className="flex gap-4">
+                                {[
+                                    { name: "Karan", phone: "9326939154" },
+                                    { name: "Rohit", phone: "7021177481" }
+                                ].map((person) => (
+                                    <label key={person.name} className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            className="rounded border-gray-300 text-black focus:ring-black"
+                                            onChange={(e) => {
+                                                const current = notifyPhones;
+                                                if (e.target.checked) {
+                                                    setNotifyPhones([...current, person.phone]);
+                                                } else {
+                                                    setNotifyPhones(current.filter(p => p !== person.phone));
+                                                }
+                                            }}
+                                            checked={notifyPhones.includes(person.phone)}
+                                        />
+                                        <span className="text-sm font-medium text-gray-700">{person.name}</span>
+                                    </label>
+                                ))}
+                            </div>
                         </div>
                     </div>
 

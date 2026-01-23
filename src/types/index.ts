@@ -42,6 +42,24 @@ export interface BookingCreate {
     media_ids?: number[];
     user_comment?: string;
     assigned_to_id?: number;
+    notify_phones?: string[];
+}
+
+export interface BookingUpdate {
+    status_id?: number;
+    quote_price?: number;
+    final_price?: number;
+    comments?: string;
+    user_comment?: string;
+    address?: string;
+    latitude?: number;
+    longitude?: number;
+    customer_name?: string;
+    customer_phone?: number;
+    service_id?: number;
+    media_ids?: number[];
+    assigned_to_id?: number;
+    notify_phones?: string[];
 }
 
 export interface Status {

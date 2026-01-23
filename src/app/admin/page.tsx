@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
-import { Phone, MessageCircle, Calendar, MapPin, RefreshCw } from "lucide-react";
+import { Phone, MessageCircle, Calendar, MapPin, RefreshCw, Trash } from "lucide-react";
 import Link from "next/link";
 import { MultiBookingAPI } from "@/lib/api/bookings";
 import { ServiceAPI } from "@/lib/api/services";
@@ -351,6 +351,24 @@ export default function AdminPage() {
                                     >
                                         <MessageCircle className="w-4 h-4" />
                                     </a>
+                                    <button
+                                        onClick={async (e) => {
+                                            e.stopPropagation();
+                                            if (confirm("Are you sure you want to delete this booking? This action cannot be undone.")) {
+                                                try {
+                                                    await MultiBookingAPI.delete(booking.id);
+                                                    fetchData();
+                                                } catch (err) {
+                                                    console.error("Failed to delete", err);
+                                                    alert("Failed to delete booking");
+                                                }
+                                            }
+                                        }}
+                                        className="h-9 w-9 rounded-full bg-red-50 border border-red-100 text-red-500 flex items-center justify-center hover:bg-red-100 hover:text-red-700 transition-all shadow-sm"
+                                        title="Delete Booking"
+                                    >
+                                        <Trash className="w-4 h-4" />
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -562,6 +580,36 @@ export default function AdminPage() {
                                 <option value="">Unassigned</option>
                                 {teamMembers.map(m => <option key={m.id} value={m.id}>{m.name} ({m.role})</option>)}
                             </select>
+                        </div>
+
+                        {/* Notifications */}
+                        <div className="mt-4 bg-blue-50/50 p-3 rounded-lg border border-blue-100">
+                            <label className="text-xs font-bold text-blue-800 mb-2 block flex items-center gap-1">
+                                <span>🔔 SEND NOTIFICATIONS</span>
+                            </label>
+                            <div className="flex gap-4">
+                                {[
+                                    { name: "Karan", phone: "9326939154" },
+                                    { name: "Rohit", phone: "7021177481" }
+                                ].map((person) => (
+                                    <label key={person.name} className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            className="rounded border-gray-300 text-black focus:ring-black"
+                                            onChange={(e) => {
+                                                const current = newBooking.notify_phones || [];
+                                                if (e.target.checked) {
+                                                    setNewBooking({ ...newBooking, notify_phones: [...current, person.phone] });
+                                                } else {
+                                                    setNewBooking({ ...newBooking, notify_phones: current.filter(p => p !== person.phone) });
+                                                }
+                                            }}
+                                            checked={(newBooking.notify_phones || []).includes(person.phone)}
+                                        />
+                                        <span className="text-sm font-medium text-gray-700">{person.name}</span>
+                                    </label>
+                                ))}
+                            </div>
                         </div>
                     </div>
 
