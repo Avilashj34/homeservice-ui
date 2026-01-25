@@ -31,10 +31,6 @@ function BookingContent() {
         user_comment: "" // Mapped from "Comments" input
     } as any);
 
-    const [bookingDate, setBookingDate] = useState("");
-    const [bookingTime, setBookingTime] = useState("");
-    const [uploadedMedia, setUploadedMedia] = useState<{ id: number, url: string, type: string }[]>([]);
-
     useEffect(() => {
         fetchServices();
     }, []);
@@ -50,32 +46,13 @@ function BookingContent() {
         }
     };
 
-    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files.length > 0) {
-            try {
-                const file = e.target.files[0];
-                const response = await BookingClient.upload(file); // No booking ID yet
-                setUploadedMedia([...uploadedMedia, response]);
-            } catch (err) {
-                alert("File upload failed");
-            }
-        }
-    };
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setSubmitting(true);
 
         try {
-            let isoDate = undefined;
-            if (bookingDate && bookingTime) {
-                isoDate = new Date(`${bookingDate}T${bookingTime}`).toISOString();
-            }
-
             const payload: BookingCreate = {
                 ...newBooking,
-                time_slot: isoDate,
-                media_ids: uploadedMedia.map(m => m.id),
                 status_id: 1, // Default Pending
                 // user_comment is already in newBooking
             };
@@ -102,20 +79,11 @@ function BookingContent() {
                         <p className="text-gray-500 text-sm">Your booking ID is #{submittedBooking.id}</p>
                     </CardHeader>
                     <CardContent className="space-y-6 pt-6">
-                        <div className="bg-gray-50 p-4 rounded-lg space-y-2 border border-gray-100">
-                            <div className="flex justify-between text-sm">
-                                <span className="text-gray-500">Service</span>
-                                <span className="font-semibold">{services.find(s => s.id === submittedBooking.service_id)?.name || "Service"}</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                                <span className="text-gray-500">Date</span>
-                                <span className="font-semibold">{new Date(submittedBooking.time_slot).toLocaleDateString()}</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                                <span className="text-gray-500">Time</span>
-                                <span className="font-semibold">{new Date(submittedBooking.time_slot).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                            </div>
+                        <div className="flex justify-between text-sm">
+                            <span className="text-gray-500">Service</span>
+                            <span className="font-semibold">{services.find(s => s.id === submittedBooking.service_id)?.name || "Service"}</span>
                         </div>
+
 
                         <div className="space-y-3">
                             <Link href={`/track/${submittedBooking.tracking_id}`}>
@@ -129,7 +97,7 @@ function BookingContent() {
                         </div>
                     </CardContent>
                 </Card>
-            </main>
+            </main >
         );
     }
 
@@ -199,24 +167,9 @@ function BookingContent() {
                         </div>
                     </div>
 
-                    {/* Date & Time */}
+                    {/* Address */}
                     <div className="space-y-4">
-                        <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider border-b pb-2">3. Preferred Time</h3>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="text-xs font-bold text-gray-500 mb-1 block">DATE</label>
-                                <Input type="date" value={bookingDate} onChange={e => setBookingDate(e.target.value)} className="bg-gray-50 border-gray-200 h-11" />
-                            </div>
-                            <div>
-                                <label className="text-xs font-bold text-gray-500 mb-1 block">TIME</label>
-                                <Input type="time" value={bookingTime} onChange={e => setBookingTime(e.target.value)} className="bg-gray-50 border-gray-200 h-11" />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Location */}
-                    <div className="space-y-4">
-                        <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider border-b pb-2">4. Address</h3>
+                        <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider border-b pb-2">3. Address</h3>
                         <div>
                             <label className="text-xs font-bold text-gray-500 mb-1 block">FULL ADDRESS</label>
                             <Input
@@ -229,33 +182,9 @@ function BookingContent() {
                         </div>
                     </div>
 
-                    {/* Media */}
-                    <div className="space-y-4">
-                        <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider border-b pb-2">5. Photos / Videos</h3>
-                        <label className="border-2 border-dashed border-gray-300 rounded-lg p-8 flex flex-col items-center justify-center bg-gray-50 hover:bg-white cursor-pointer transition-colors relative group">
-                            <span className="text-3xl mb-2 group-hover:scale-110 transition-transform">📷</span>
-                            <span className="text-sm font-bold text-gray-600">Click to upload photos/videos</span>
-                            <span className="text-xs text-gray-400 mt-1">Help us understand the issue better</span>
-                            <input type="file" className="hidden" multiple onChange={handleFileSelect} accept="image/*,video/*" />
-                        </label>
-                        {uploadedMedia.length > 0 && (
-                            <div className="grid grid-cols-4 gap-2">
-                                {uploadedMedia.map((m, i) => (
-                                    <div key={i} className="aspect-square bg-gray-100 rounded-lg overflow-hidden border border-gray-200 relative">
-                                        {m.type.includes("image") ? (
-                                            <img src={m.url} alt="Uploaded" className="w-full h-full object-cover" />
-                                        ) : (
-                                            <div className="flex items-center justify-center h-full text-[10px] text-gray-500 font-bold">VIDEO</div>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
                     {/* Comments */}
                     <div className="space-y-4">
-                        <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider border-b pb-2">6. Additional Notes</h3>
+                        <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider border-b pb-2">4. Additional Notes</h3>
                         <div>
                             <label className="text-xs font-bold text-gray-500 mb-1 block">USER COMMENTS</label>
                             <textarea

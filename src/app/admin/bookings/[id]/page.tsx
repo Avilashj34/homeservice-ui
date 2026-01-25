@@ -8,8 +8,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
-import { Booking, TeamMember } from "@/types";
+import { Booking, TeamMember, Repairman } from "@/types";
 import { TeamAPI } from "@/lib/api/team";
+import { RepairmenAPI } from "@/lib/api/repairmen";
 import { CommentsAPI, Comment } from "@/lib/api/comments";
 
 interface BookingDetail {
@@ -49,6 +50,7 @@ export default function BookingDetailPage() {
     const [services, setServices] = useState<any[]>([]);
     const [statuses, setStatuses] = useState<any[]>([]);
     const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+    const [repairmen, setRepairmen] = useState<Repairman[]>([]);
     const [comments, setComments] = useState<Comment[]>([]);
     const [newCommentText, setNewCommentText] = useState("");
     const [notifyPhones, setNotifyPhones] = useState<string[]>([]);
@@ -94,16 +96,18 @@ export default function BookingDetailPage() {
     const fetchBooking = async () => {
         try {
             const bookingData = await MultiBookingAPI.getById(Number(id));
-            const [servicesData, statusesData, teamMembersData] = await Promise.all([
+            const [servicesData, statusesData, teamMembersData, repairmenData] = await Promise.all([
                 // I need ServiceAPI and StatusAPI imports
                 import("@/lib/api/services").then(m => m.ServiceAPI.getAll()),
                 import("@/lib/api/status").then(m => m.StatusAPI.getAll()),
-                TeamAPI.getAll()
+                TeamAPI.getAll(),
+                RepairmenAPI.getAll()
             ]);
             setBooking(bookingData);
             setServices(servicesData);
             setStatuses(statusesData);
             setTeamMembers(teamMembersData);
+            setRepairmen(repairmenData);
         } catch (err) {
             console.error("Failed to load booking", err);
         } finally {
@@ -211,8 +215,12 @@ export default function BookingDetailPage() {
                                     <p className="text-base md:text-lg font-medium">{booking.customer_phone}</p>
                                 </div>
                                 <div className="sm:col-span-2">
-                                    <label className="text-xs font-bold text-gray-400 uppercase block mb-1">Service Required</label>
-                                    <p className="text-base md:text-lg font-medium">{booking.service_name || `Service ID: ${booking.service_id}`}</p>
+                                    <label className="text-xs font-bold text-gray-400 uppercase block mb-1">Issue Described</label>
+                                    <p className="text-base md:text-lg font-medium">{booking.comments}</p>
+                                </div>
+                                <div className="sm:col-span-2">
+                                    <label className="text-xs font-bold text-gray-400 uppercase block mb-1">User Comment</label>
+                                    <p className="text-base md:text-lg font-medium">{booking.user_comment || "No user comment"}</p>
                                 </div>
                                 <div className="sm:col-span-2">
                                     <label className="text-xs font-bold text-gray-400 uppercase block mb-1">Appointment Time</label>
@@ -227,6 +235,18 @@ export default function BookingDetailPage() {
                                         <div>
                                             <p className="text-sm font-bold text-gray-900">{booking.assigned_to ? booking.assigned_to.name : "Unassigned"}</p>
                                             {booking.assigned_to && <p className="text-xs text-gray-500">{booking.assigned_to.email}</p>}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="sm:col-span-2 pt-4 border-t border-gray-100">
+                                    <label className="text-xs font-bold text-gray-400 uppercase block mb-1">Assigned Repairman</label>
+                                    <div className="flex items-center gap-2">
+                                        <div className="h-8 w-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-700 text-xs font-bold">
+                                            {booking.repairman ? booking.repairman.name.charAt(0) : "?"}
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-bold text-gray-900">{booking.repairman ? booking.repairman.name : "Unassigned"}</p>
+                                            {booking.repairman && <p className="text-xs text-gray-500">{booking.repairman.service_type}</p>}
                                         </div>
                                     </div>
                                 </div>
@@ -433,51 +453,6 @@ export default function BookingDetailPage() {
                                 {booking.user_comment}
                             </div>
                         )}
-
-                        <Card className="border-gray-200">
-                            <CardHeader className="bg-gray-100/50 border-b border-gray-100 p-4 md:p-6 flex flex-row items-center justify-between">
-                                <CardTitle className="text-base">Internal Team Comments</CardTitle>
-                                <span className="text-xs bg-gray-200 px-2 py-1 rounded-full text-gray-600 font-bold">{comments.length}</span>
-                            </CardHeader>
-                            <CardContent className="p-4 md:p-6 space-y-4">
-                                <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                                    {comments.length === 0 ? (
-                                        <div className="text-center py-8 text-gray-400 text-sm">No internal comments yet.</div>
-                                    ) : (
-                                        comments.map((comment, index) => (
-                                            <div key={comment.id} className="flex gap-3 text-sm">
-                                                <div className="h-8 w-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xs shrink-0 uppercase border border-blue-200">
-                                                    {comment.author_name.charAt(0)}
-                                                </div>
-                                                <div className="bg-gray-50 p-3 rounded-lg border border-gray-100 w-full hover:bg-white transition-colors">
-                                                    <div className="flex justify-between items-center mb-1">
-                                                        <span className="font-bold text-gray-900 text-xs">{comment.author_name}</span>
-                                                        <span className="text-[10px] text-gray-400">{new Date(comment.created_at).toLocaleString()}</span>
-                                                    </div>
-                                                    <p className="text-gray-700 leading-relaxed">{comment.text}</p>
-                                                </div>
-                                            </div>
-                                        ))
-                                    )}
-                                </div>
-                                <div className="pt-4 border-t border-gray-100 flex gap-2">
-                                    <Input
-                                        placeholder="Type an internal note..."
-                                        value={newCommentText}
-                                        onChange={(e) => setNewCommentText(e.target.value)}
-                                        className="bg-white"
-                                        onKeyDown={async (e) => {
-                                            if (e.key === 'Enter' && newCommentText.trim()) {
-                                                await handleAddComment();
-                                            }
-                                        }}
-                                    />
-                                    <Button onClick={handleAddComment} disabled={!newCommentText.trim()} className="bg-black hover:bg-gray-800 text-white shadow-sm shrink-0">
-                                        Post
-                                    </Button>
-                                </div>
-                            </CardContent>
-                        </Card>
                     </div>
                 </div>
             </div>
@@ -635,7 +610,7 @@ export default function BookingDetailPage() {
                         </div>
 
                         <div>
-                            <label className="text-xs font-semibold text-gray-500 mb-1 block">ASSIGNED TEAME MEMBER</label>
+                            <label className="text-xs font-semibold text-gray-500 mb-1 block">ASSIGNED TEAM MEMBER</label>
                             <select
                                 className="w-full h-10 rounded-md border border-gray-300 bg-white px-3 text-sm focus:border-black outline-none"
                                 value={updateForm.assigned_to_id || (booking?.assigned_to?.id) || ""}
@@ -643,6 +618,18 @@ export default function BookingDetailPage() {
                             >
                                 <option value="">Unassigned</option>
                                 {teamMembers.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="text-xs font-semibold text-gray-500 mb-1 block">ASSIGNED REPAIRMAN</label>
+                            <select
+                                className="w-full h-10 rounded-md border border-gray-300 bg-white px-3 text-sm focus:border-black outline-none"
+                                value={updateForm.repairman_id || (booking?.repairman_id) || ""}
+                                onChange={e => setUpdateForm({ ...updateForm, repairman_id: e.target.value ? parseInt(e.target.value) : undefined })}
+                            >
+                                <option value="">Unassigned</option>
+                                {repairmen.map(r => <option key={r.id} value={r.id}>{r.name} ({r.service_type})</option>)}
                             </select>
                         </div>
 
@@ -654,7 +641,7 @@ export default function BookingDetailPage() {
                             <div className="flex gap-4">
                                 {[
                                     { name: "Karan", phone: "9326939154" },
-                                    { name: "Rohit", phone: "7021177481" }
+                                    { name: "Rohit", phone: "7021177486" }
                                 ].map((person) => (
                                     <label key={person.name} className="flex items-center gap-2 cursor-pointer">
                                         <input

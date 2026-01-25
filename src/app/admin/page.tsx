@@ -11,13 +11,15 @@ import { MultiBookingAPI } from "@/lib/api/bookings";
 import { ServiceAPI } from "@/lib/api/services";
 import { StatusAPI } from "@/lib/api/status";
 import { TeamAPI } from "@/lib/api/team";
-import { Booking, Status, Service, BookingCreate, TeamMember } from "@/types";
+import { RepairmenAPI } from "@/lib/api/repairmen";
+import { Booking, Status, Service, BookingCreate, TeamMember, Repairman } from "@/types";
 
 export default function AdminPage() {
     const [bookings, setBookings] = useState<Booking[]>([]);
     const [statuses, setStatuses] = useState<Status[]>([]);
     const [services, setServices] = useState<Service[]>([]);
     const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+    const [repairmen, setRepairmen] = useState<Repairman[]>([]);
     const [loading, setLoading] = useState(true);
 
     // Filters
@@ -63,7 +65,7 @@ export default function AdminPage() {
     const fetchData = async () => {
         try {
             setLoading(true);
-            const [bookingsData, statusesData, servicesData, teamMembersData] = await Promise.all([
+            const [bookingsData, statusesData, servicesData, teamMembersData, repairmenData] = await Promise.all([
                 MultiBookingAPI.getAll({
                     search: search || undefined,
                     status_id: statusFilter ? Number(statusFilter) : undefined,
@@ -73,12 +75,14 @@ export default function AdminPage() {
                 }),
                 StatusAPI.getAll(),
                 ServiceAPI.getAll(),
-                TeamAPI.getAll()
+                TeamAPI.getAll(),
+                RepairmenAPI.getAll()
             ]);
             setBookings(bookingsData);
             setStatuses(statusesData);
             setServices(servicesData);
             setTeamMembers(teamMembersData);
+            setRepairmen(repairmenData);
         } catch (err) {
             console.error("Failed to fetch data", err);
         } finally {
@@ -181,6 +185,9 @@ export default function AdminPage() {
                 <h1 className="text-3xl font-bold">Team Dashboard</h1>
                 <div className="w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
                     <div className="flex space-x-2 whitespace-nowrap">
+                        <Button onClick={() => setIsBookingModalOpen(true)} className="bg-black text-white hover:bg-gray-800 flex-shrink-0">
+                            + New Booking
+                        </Button>
                         <Button onClick={() => setIsViewStatusModalOpen(true)} variant="outline" className="text-black border-black hover:bg-gray-100 flex-shrink-0">
                             View Statuses
                         </Button>
@@ -192,9 +199,11 @@ export default function AdminPage() {
                                 Manage Team
                             </Button>
                         </Link>
-                        <Button onClick={() => setIsBookingModalOpen(true)} className="bg-black text-white hover:bg-gray-800 flex-shrink-0">
-                            + New Booking
-                        </Button>
+                        <Link href="/admin/repairmen">
+                            <Button variant="outline" className="text-black border-black hover:bg-gray-100 flex-shrink-0">
+                                Manage Repairmen
+                            </Button>
+                        </Link>
                     </div>
                 </div>
             </div>
@@ -321,6 +330,16 @@ export default function AdminPage() {
                                         <div className="flex items-start gap-2 text-sm text-gray-600">
                                             <MapPin className="w-3.5 h-3.5 text-gray-400 mt-0.5 flex-shrink-0" />
                                             <span className="truncate line-clamp-1">{booking.address}</span>
+                                        </div>
+                                    )}
+                                    {booking.repairman && (
+                                        <div className="flex items-center gap-2 text-sm text-gray-600 pt-1">
+                                            <div className="h-4 w-4 flex items-center justify-center rounded-full bg-orange-100 text-[10px] font-bold text-orange-700 mt-0.5 flex-shrink-0">
+                                                {booking.repairman.name.charAt(0)}
+                                            </div>
+                                            <span className="truncate text-orange-700 font-medium text-xs bg-orange-50 px-2 py-0.5 rounded-full border border-orange-100">
+                                                {booking.repairman.name}
+                                            </span>
                                         </div>
                                     )}
                                 </div>
@@ -582,6 +601,18 @@ export default function AdminPage() {
                             </select>
                         </div>
 
+                        <div className="mt-4">
+                            <label className="text-xs font-semibold text-gray-500 mb-1 block">ASSIGN REPAIRMAN</label>
+                            <select
+                                className="w-full h-10 rounded-md border border-gray-300 bg-white px-3 text-sm focus:border-black outline-none"
+                                value={newBooking.repairman_id || ""}
+                                onChange={e => setNewBooking({ ...newBooking, repairman_id: e.target.value ? parseInt(e.target.value) : undefined })}
+                            >
+                                <option value="">Unassigned</option>
+                                {repairmen.map(r => <option key={r.id} value={r.id}>{r.name} ({r.service_type})</option>)}
+                            </select>
+                        </div>
+
                         {/* Notifications */}
                         <div className="mt-4 bg-blue-50/50 p-3 rounded-lg border border-blue-100">
                             <label className="text-xs font-bold text-blue-800 mb-2 block flex items-center gap-1">
@@ -590,7 +621,7 @@ export default function AdminPage() {
                             <div className="flex gap-4">
                                 {[
                                     { name: "Karan", phone: "9326939154" },
-                                    { name: "Rohit", phone: "7021177481" }
+                                    { name: "Rohit", phone: "7021177486" }
                                 ].map((person) => (
                                     <label key={person.name} className="flex items-center gap-2 cursor-pointer">
                                         <input

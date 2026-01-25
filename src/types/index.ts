@@ -19,6 +19,8 @@ export interface Booking {
     user_comment?: string;
     assigned_to?: TeamMember;
     assigned_to_id?: number;
+    repairman?: Repairman;
+    repairman_id?: number;
 }
 
 export interface TeamMember {
@@ -43,12 +45,14 @@ export interface BookingCreate {
     user_comment?: string;
     assigned_to_id?: number;
     notify_phones?: string[];
+    repairman_id?: number;
 }
 
 export interface BookingUpdate {
     status_id?: number;
     quote_price?: number;
     final_price?: number;
+    time_slot?: string;
     comments?: string;
     user_comment?: string;
     address?: string;
@@ -60,6 +64,7 @@ export interface BookingUpdate {
     media_ids?: number[];
     assigned_to_id?: number;
     notify_phones?: string[];
+    repairman_id?: number;
 }
 
 export interface Status {
@@ -84,4 +89,19 @@ export interface TeamMemberCreate {
     name: string;
     email: string;
     role?: string;
+}
+
+export interface Repairman {
+    id: number;
+    name: string;
+    phone_number: string;
+    service_type: string;
+    employee_type: string;
+}
+
+export interface RepairmanCreate {
+    name: string;
+    phone_number: string;
+    service_type: string;
+    employee_type: string;
 }
