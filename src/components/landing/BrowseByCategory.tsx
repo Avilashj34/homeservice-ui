@@ -1,74 +1,113 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-
-// Hardcoded top issues to feature (based on user request)
-const TOP_ISSUES = [
-    {
-        name: "Switch / Socket Replacement",
-        price: 199,
-        img: "/images/issues/issue_switch_replacement_1769928166162.png",
-        service_id: 1, // Assumed ID for Electrician
-        color: "bg-blue-50 text-blue-600"
-    },
-    {
-        name: "Tap Repair",
-        price: 249,
-        img: "/images/issues/issue_tap_repair_1769928182281.png",
-        service_id: 2, // Assumed ID for Plumber
-        color: "bg-cyan-50 text-cyan-600"
-    },
-    {
-        name: "Door Hinge Repair",
-        price: 349,
-        img: "/images/issues/issue_door_hinge_1769928197715.png",
-        service_id: 3, // Assumed ID for Carpenter
-        color: "bg-amber-50 text-amber-600"
-    },
-    {
-        name: "Wash Basin Installation",
-        price: 899,
-        img: "/images/issues/issue_basin_install_1769928231649.png",
-        service_id: 2,
-        color: "bg-indigo-50 text-indigo-600"
-    }
-];
+import { ServiceAPI } from "@/lib/api/services";
+import { Service } from "@/types";
+import { motion } from "framer-motion";
 
 export function BrowseByCategory() {
+    const [services, setServices] = useState<Service[]>([]);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        ServiceAPI.getAll().then(data => {
+            setServices(data);
+        });
+    }, []);
+
+    // Derived Top Issues
+    const topIssues = services.flatMap(s =>
+        s.categories?.flatMap(c =>
+            c.issues.filter(i => i.is_top_issue).map(i => ({ ...i, serviceName: s.name, categoryName: c.name }))
+        ) || []
+    ).slice(0, 10); // Limit to top 10
+
+    // Auto-scroll effect for mobile
+    useEffect(() => {
+        const container = scrollContainerRef.current;
+        if (!container) return;
+
+        let animationFrameId: number;
+        let scrollAmount = 0;
+        const speed = 0.5; // slow speed
+
+        const animate = () => {
+            if (container) {
+                scrollAmount += speed;
+                if (scrollAmount >= container.scrollWidth / 2) {
+                    scrollAmount = 0;
+                }
+                container.scrollLeft = scrollAmount;
+                animationFrameId = requestAnimationFrame(animate);
+            }
+        };
+
+        // Only animate on mobile
+        if (window.innerWidth < 768) {
+            // CSS animation is used instead for smoother marquee
+        }
+
+        return () => cancelAnimationFrame(animationFrameId);
+    }, [topIssues]);
+
     return (
-        <section className="py-24 px-6 bg-white">
-            <div className="max-w-7xl mx-auto">
-                <div className="text-center mb-12">
-                    <h2 className="text-4xl font-black mb-4">POPULAR FIXES.</h2>
-                    <p className="text-gray-500 text-lg">Common home issues we solve everyday.</p>
+        <section className="py-10 bg-gray-50">
+            <div className="max-w-7xl mx-auto px-6">
+                <div className="text-center mb-8">
+                    <h2 className="text-4xl font-black text-gray-900 mb-4 tracking-tight">Browse by Category</h2>
+                    <p className="text-xl text-gray-500 max-w-2xl mx-auto">Explore our extensive catalog of home services.</p>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                    {TOP_ISSUES.map((issue, i) => (
-                        <motion.div
-                            key={i}
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ delay: i * 0.1 }}
-                        >
-                            <Link href={`/book?service_id=${issue.service_id}`} className="group block">
-                                <div className="relative aspect-[4/3] rounded-2xl overflow-hidden mb-4 bg-gray-100">
-                                    <Image
-                                        src={issue.img}
-                                        alt={issue.name}
-                                        fill
-                                        className="object-cover group-hover:scale-110 transition-transform duration-500"
-                                    />
+                {/* Top Issues - Mobile Marquee / Desktop Grid */}
+                {topIssues.length > 0 && (
+                    <div className="mb-12">
+                        <h3 className="text-lg font-bold text-gray-900 mb-6 uppercase tracking-wider px-2">🔥 Popular Issues</h3>
+
+                        {/* Mobile: Marquee Scroll */}
+                        <div className="block md:hidden overflow-hidden relative w-full">
+                            <div className="flex gap-4 animate-marquee whitespace-nowrap">
+                                {[...topIssues, ...topIssues].map((issue, idx) => (
+                                    <div key={`${issue.id}-${idx}`} className="inline-block w-64 flex-shrink-0 bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+                                        <div className="flex items-center gap-4">
+                                            {issue.image_url ? (
+                                                <div className="w-16 h-16 relative rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                                                    <Image src={`http://localhost:8000/api/${issue.image_url.startsWith('/') ? issue.image_url.slice(1) : issue.image_url}`} alt={issue.name} fill className="object-cover" />
+                                                </div>
+                                            ) : (
+                                                <div className="w-16 h-16 bg-gray-100 rounded-lg flex-shrink-0" />
+                                            )}
+                                            <div className="whitespace-normal">
+                                                <div className="font-bold text-gray-900 text-sm">{issue.name}</div>
+                                                <div className="text-xs text-gray-500 mt-1">₹{issue.price} • {issue.serviceName}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Desktop: Grid */}
+                        <div className="hidden md:grid grid-cols-2 lg:grid-cols-4 gap-4">
+                            {topIssues.map(issue => (
+                                <div key={issue.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex items-center gap-4 hover:shadow-md transition-shadow">
+                                    {issue.image_url ? (
+                                        <div className="w-16 h-16 relative rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                                            <Image src={`http://localhost:8000/api/${issue.image_url}`} alt={issue.name} fill className="object-cover" />
+                                        </div>
+                                    ) : (
+                                        <div className="w-16 h-16 bg-gray-100 rounded-lg flex-shrink-0" />
+                                    )}
+                                    <div>
+                                        <div className="font-bold text-gray-900 text-sm">{issue.name}</div>
+                                        <div className="text-xs text-gray-500 mt-1">₹{issue.price}</div>
+                                    </div>
                                 </div>
-                                <h3 className="font-bold text-lg mb-1 group-hover:text-black transition-colors">{issue.name}</h3>
-                                <p className="text-gray-500 font-medium">Starts at ₹{issue.price}</p>
-                            </Link>
-                        </motion.div>
-                    ))}
-                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
         </section>
     );

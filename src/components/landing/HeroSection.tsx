@@ -4,7 +4,19 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
+import { Offer, OfferAPI } from "@/lib/api/offers";
+import { useState, useEffect } from "react";
+
 export function HeroSection() {
+    const [exclusiveOffer, setExclusiveOffer] = useState<Offer | null>(null);
+
+    useEffect(() => {
+        OfferAPI.getAll().then(offers => {
+            const firstBookingOffer = offers.find(o => o.is_new_user_exclusive);
+            if (firstBookingOffer) setExclusiveOffer(firstBookingOffer);
+        });
+    }, []);
+
     return (
         <section className="relative h-screen min-h-[800px] flex items-center justify-center overflow-hidden pt-32">
             {/* Background Image with Light Gradient Overlay */}
@@ -22,6 +34,13 @@ export function HeroSection() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8, ease: "easeOut" }}
                 >
+                    {exclusiveOffer && (
+                        <div className="mb-6 inline-block">
+                            <span className="bg-gradient-to-r from-red-600 to-rose-600 text-white px-4 py-1.5 rounded-full text-sm md:text-base font-bold shadow-lg animate-pulse tracking-wide">
+                                🎁 {exclusiveOffer.description} <span className="underline ml-1">Use Code: {exclusiveOffer.code}</span>
+                            </span>
+                        </div>
+                    )}
                     <h1 className="text-5xl sm:text-7xl md:text-9xl font-black tracking-tighter mb-8 leading-[1.0] text-gray-900">
                         FIX YOUR <br />
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500">

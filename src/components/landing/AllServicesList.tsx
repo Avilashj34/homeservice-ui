@@ -16,11 +16,13 @@ export function AllServicesList({ services }: { services: Service[] }) {
     const activeService = services.find(s => s.id.toString() === selectedServiceId) || services[0];
 
     return (
-        <section className="py-24 px-4 md:px-6 bg-gray-50" id="all-services">
-            <div className="max-w-7xl mx-auto">
-                <div className="text-center mb-16">
-                    <h2 className="text-3xl md:text-5xl font-black mb-4 tracking-tight">EXPLORE MENU.</h2>
-                    <p className="text-gray-500 text-lg">Detailed price list for every service we offer.</p>
+        <section className="py-10 bg-white" id="services">
+            <div className="max-w-7xl mx-auto px-6">
+                <div className="text-center mb-8">
+                    <h2 className="text-3xl md:text-5xl font-black text-gray-900 mb-4 tracking-tighter">
+                        EXPLORE MENU.
+                    </h2>
+                    <p className="text-xl text-gray-500">Everything you need for your home.</p>
                 </div>
 
                 <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">

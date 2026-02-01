@@ -11,6 +11,9 @@ import Link from "next/link";
 import { MultiBookingAPI as BookingClient } from "@/lib/api/bookings";
 import { motion, AnimatePresence } from "framer-motion";
 
+import axios from "axios";
+import { toast } from "sonner"; // Assuming sonner is used, or use existing toast lib
+
 function BookingContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -39,6 +42,10 @@ function BookingContent() {
     const [bookingDate, setBookingDate] = useState("");
     const [bookingTime, setBookingTime] = useState("");
     const [uploadedMedia, setUploadedMedia] = useState<{ id: number, url: string, type: string }[]>([]);
+
+    // Offer State
+    const [couponCode, setCouponCode] = useState("");
+    const [isEligibleForOffer, setIsEligibleForOffer] = useState(false);
 
     useEffect(() => {
         fetchServices();
@@ -74,6 +81,34 @@ function BookingContent() {
                 setUploadedMedia([...uploadedMedia, response]);
             } catch (err) {
                 alert("File upload failed");
+            }
+        }
+    };
+
+    const handlePhoneBlur = async () => {
+        if (newBooking.customer_phone && newBooking.customer_phone.toString().length >= 10) {
+            try {
+                // Check eligibility
+                const res = await axios.get(`http://localhost:8000/bookings/check-eligibility?phone=${newBooking.customer_phone}`);
+                if (res.data.is_new_user) {
+                    setIsEligibleForOffer(true);
+                    // Fetch offers to find the code
+                    // Optimization: Could cache this or pass as prop
+                    const offersRes = await axios.get(`http://localhost:8000/offers/`);
+                    const exclusive = offersRes.data.find((o: any) => o.is_new_user_exclusive);
+                    if (exclusive) {
+                        setCouponCode(exclusive.code);
+                        toast.success(`First booking offer '${exclusive.code}' applied!`);
+                    }
+                } else {
+                    setIsEligibleForOffer(false);
+                    if (couponCode === "BOOK50") { // specific check to only clear if it was the auto-applied one
+                        setCouponCode("");
+                        toast.info("Offer not applicable for existing users.");
+                    }
+                }
+            } catch (err) {
+                console.error("Eligibility check failed", err);
             }
         }
     };
@@ -212,8 +247,8 @@ function BookingContent() {
                                                                 setSelectedIssue(issue);
                                                             }}
                                                             className={`p-4 rounded-xl border cursor-pointer transition-all flex justify-between items-center group ${selectedIssue?.id === issue.id
-                                                                    ? "bg-black text-white border-black shadow-md"
-                                                                    : "bg-white border-gray-100 hover:border-black"
+                                                                ? "bg-black text-white border-black shadow-md"
+                                                                : "bg-white border-gray-100 hover:border-black"
                                                                 }`}
                                                         >
                                                             <div>
@@ -261,6 +296,7 @@ function BookingContent() {
                                             required type="number" placeholder="Phone Number"
                                             value={newBooking.customer_phone || ''}
                                             onChange={e => setNewBooking({ ...newBooking, customer_phone: parseInt(e.target.value) || 0 })}
+                                            onBlur={handlePhoneBlur}
                                             className="bg-gray-50 h-12"
                                         />
                                         <Input
@@ -269,6 +305,15 @@ function BookingContent() {
                                             onChange={e => setNewBooking({ ...newBooking, address: e.target.value })}
                                             className="bg-gray-50 h-12 md:col-span-2"
                                         />
+                                        <div className="md:col-span-2 flex gap-2">
+                                            <Input
+                                                placeholder="Have a discount code?"
+                                                value={couponCode}
+                                                onChange={(e) => setCouponCode(e.target.value)}
+                                                className="bg-gray-50 h-12"
+                                            />
+                                            <Button type="button" variant="outline" className="h-12 border-gray-300" onClick={() => toast.info("Coupons are auto-applied if eligible!")}>Apply</Button>
+                                        </div>
                                     </div>
                                 </div>
 
