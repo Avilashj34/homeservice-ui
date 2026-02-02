@@ -11,6 +11,7 @@ import { Modal } from "@/components/ui/modal";
 import { Booking, TeamMember } from "@/types";
 import { TeamAPI } from "@/lib/api/team";
 import { CommentsAPI, Comment } from "@/lib/api/comments";
+import { STAFF_NOTIFICATIONS } from "@/lib/constants";
 
 interface BookingDetail {
     id: number;
@@ -262,10 +263,7 @@ export default function BookingDetailPage() {
                                 <div className="pt-4 border-t border-gray-100">
                                     <div className="flex gap-4 mb-3 px-1">
                                         <span className="text-xs font-bold text-gray-400 uppercase tracking-wider self-center mr-2">Notify Team:</span>
-                                        {[
-                                            { name: "Karan", phone: "9326939154" },
-                                            { name: "Rohit", phone: "7021177486" }
-                                        ].map((person) => (
+                                        {STAFF_NOTIFICATIONS.map((person) => (
                                             <label key={person.name} className="flex items-center gap-1.5 cursor-pointer bg-gray-50 px-2 py-1 rounded border border-gray-100 hover:bg-gray-100 transition-colors">
                                                 <input
                                                     type="checkbox"
@@ -652,10 +650,7 @@ export default function BookingDetailPage() {
                                 <span>🔔 SEND NOTIFICATIONS</span>
                             </label>
                             <div className="flex gap-4">
-                                {[
-                                    { name: "Karan", phone: "9326939154" },
-                                    { name: "Rohit", phone: "7021177481" }
-                                ].map((person) => (
+                                {STAFF_NOTIFICATIONS.map((person) => (
                                     <label key={person.name} className="flex items-center gap-2 cursor-pointer">
                                         <input
                                             type="checkbox"

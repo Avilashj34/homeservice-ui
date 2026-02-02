@@ -12,6 +12,7 @@ import { ServiceAPI } from "@/lib/api/services";
 import { StatusAPI } from "@/lib/api/status";
 import { TeamAPI } from "@/lib/api/team";
 import { Booking, Status, Service, BookingCreate, TeamMember } from "@/types";
+import { STAFF_NOTIFICATIONS } from "@/lib/constants";
 
 export default function AdminPage() {
     const [bookings, setBookings] = useState<Booking[]>([]);
@@ -588,10 +589,7 @@ export default function AdminPage() {
                                 <span>🔔 SEND NOTIFICATIONS</span>
                             </label>
                             <div className="flex gap-4">
-                                {[
-                                    { name: "Karan", phone: "9326939154" },
-                                    { name: "Rohit", phone: "7021177481" }
-                                ].map((person) => (
+                                {STAFF_NOTIFICATIONS.map((person) => (
                                     <label key={person.name} className="flex items-center gap-2 cursor-pointer">
                                         <input
                                             type="checkbox"
