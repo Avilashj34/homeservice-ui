@@ -22,6 +22,8 @@ export interface Service {
     description: string;
     base_price: number;
     image_url?: string;
+    icon?: string;
+    color_theme?: string;
     categories: ServiceCategory[];
 }
 

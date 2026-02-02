@@ -11,6 +11,7 @@ export interface Offer {
     text_color: string;
     is_active: boolean;
     is_new_user_exclusive: boolean;
+    discount_percentage: number;
 }
 
 export const OfferAPI = {
@@ -30,7 +31,8 @@ export const OfferAPI = {
                     bg_color: "bg-gradient-to-r from-red-600 to-rose-600",
                     text_color: "text-white",
                     is_active: true,
-                    is_new_user_exclusive: true
+                    is_new_user_exclusive: true,
+                    discount_percentage: 50
                 },
                 {
                     id: 2,
@@ -40,7 +42,8 @@ export const OfferAPI = {
                     bg_color: "bg-gradient-to-r from-green-600 to-emerald-600",
                     text_color: "text-white",
                     is_active: true,
-                    is_new_user_exclusive: false
+                    is_new_user_exclusive: false,
+                    discount_percentage: 10
                 }
             ];
         }

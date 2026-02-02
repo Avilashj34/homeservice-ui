@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ServiceAPI } from "@/lib/api/services";
+import { OfferAPI, Offer } from "@/lib/api/offers";
 import { BookingCreate, Service, ServiceCategory, ServiceIssue } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,28 +46,14 @@ function BookingContent() {
 
     // Offer State
     const [couponCode, setCouponCode] = useState("");
+    const [selectedCoupon, setSelectedCoupon] = useState<Offer | null>(null);
+    const [availableOffers, setAvailableOffers] = useState<Offer[]>([]);
     const [isEligibleForOffer, setIsEligibleForOffer] = useState(false);
 
     useEffect(() => {
         fetchServices();
+        fetchOffers();
     }, []);
-
-    // Handle pre-selection
-    useEffect(() => {
-        if (services.length > 0 && preSelectedServiceId) {
-            const s = services.find(s => s.id === parseInt(preSelectedServiceId));
-            if (s) {
-                setSelectedService(s);
-                setNewBooking(prev => ({ ...prev, service_id: s.id }));
-
-                // Auto-select first category
-                if (s.categories && s.categories.length > 0) {
-                    const sorted = [...s.categories].sort((a, b) => a.order - b.order);
-                    setSelectedCategory(sorted[0]);
-                }
-            }
-        }
-    }, [services, preSelectedServiceId]);
 
     const fetchServices = async () => {
         try {
@@ -79,17 +66,24 @@ function BookingContent() {
         }
     };
 
-    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files.length > 0) {
-            try {
-                const file = e.target.files[0];
-                const response = await BookingClient.upload(file);
-                setUploadedMedia([...uploadedMedia, response]);
-            } catch (err) {
-                alert("File upload failed");
-            }
+    const fetchOffers = async () => {
+        try {
+            const data = await OfferAPI.getAll();
+            // Filter active offers only
+            setAvailableOffers(data.filter(o => o.is_active));
+        } catch (err) {
+            console.error("Failed to fetch offers");
         }
     };
+
+    useEffect(() => {
+        fetchServices();
+        fetchOffers();
+    }, []);
+
+    // ... (rest of useEffects)
+
+    // ... (rest of functions)
 
     const handlePhoneBlur = async () => {
         if (newBooking.customer_phone && newBooking.customer_phone.toString().length >= 10) {
@@ -98,19 +92,21 @@ function BookingContent() {
                 const res = await axios.get(`http://localhost:8000/bookings/check-eligibility?phone=${newBooking.customer_phone}`);
                 if (res.data.is_new_user) {
                     setIsEligibleForOffer(true);
-                    // Fetch offers to find the code
-                    // Optimization: Could cache this or pass as prop
-                    const offersRes = await axios.get(`http://localhost:8000/offers/`);
-                    const exclusive = offersRes.data.find((o: any) => o.is_new_user_exclusive);
-                    if (exclusive) {
-                        setCouponCode(exclusive.code);
+
+                    // Auto-apply exclusive coupon if not already applied
+                    const exclusive = availableOffers.find(o => o.is_new_user_exclusive);
+                    if (exclusive && !selectedCoupon) {
+                        setSelectedCoupon(exclusive);
+                        setCouponCode(exclusive.code || "");
                         toast.success(`First booking offer '${exclusive.code}' applied!`);
                     }
                 } else {
                     setIsEligibleForOffer(false);
-                    if (couponCode === "BOOK50") { // specific check to only clear if it was the auto-applied one
+                    // If currently selected coupon is exclusive, remove it
+                    if (selectedCoupon && selectedCoupon.is_new_user_exclusive) {
+                        setSelectedCoupon(null);
                         setCouponCode("");
-                        toast.info("Offer not applicable for existing users.");
+                        toast.info("Offer removed: Valid for new users only.");
                     }
                 }
             } catch (err) {
@@ -141,8 +137,10 @@ function BookingContent() {
                 time_slot: isoDate,
                 media_ids: uploadedMedia.map(m => m.id),
                 status_id: 1,
-                user_comment: fullComment,
-                quote_price: selectedIssue?.price || selectedService?.base_price // Pass selected price as quote
+                user_comment: fullComment + (selectedCoupon ? ` [Coupon: ${selectedCoupon.code}]` : ""),
+                quote_price: selectedCoupon
+                    ? Math.round((selectedIssue?.price || 0) * (1 - selectedCoupon.discount_percentage / 100))
+                    : (selectedIssue?.price || selectedService?.base_price)
             };
 
             const created = await BookingClient.create(payload);
@@ -348,15 +346,101 @@ function BookingContent() {
                                             onChange={e => setNewBooking({ ...newBooking, address: e.target.value })}
                                             className="bg-gray-50 h-12 md:col-span-2"
                                         />
-                                        <div className="md:col-span-2 flex gap-2">
-                                            <Input
-                                                placeholder="Have a discount code?"
-                                                value={couponCode}
-                                                onChange={(e) => setCouponCode(e.target.value)}
-                                                className="bg-gray-50 h-12"
-                                            />
-                                            <Button type="button" variant="outline" className="h-12 border-gray-300" onClick={() => toast.info("Coupons are auto-applied if eligible!")}>Apply</Button>
+                                        {/* Coupon Selection - Enhanced UI */}
+                                        <div className="md:col-span-2 space-y-3">
+                                            <label className="text-sm font-bold text-gray-900 block">Apply Coupon</label>
+
+                                            {/* Selected Coupon Display / Trigger */}
+                                            {selectedCoupon ? (
+                                                <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-xl">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="bg-green-100 p-2 rounded-lg text-green-700">
+                                                            <span className="text-xl">🏷️</span>
+                                                        </div>
+                                                        <div>
+                                                            <div className="font-bold text-green-900">{selectedCoupon.code} Applied</div>
+                                                            <div className="text-xs text-green-700">{selectedCoupon.description}</div>
+                                                        </div>
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setSelectedCoupon(null);
+                                                            setCouponCode("");
+                                                            // If it was auto-applied new user coupon, maybe remind them?
+                                                            if (isEligibleForOffer && selectedCoupon.is_new_user_exclusive) {
+                                                                toast.info("You removed your exclusive new user offer.");
+                                                            }
+                                                        }}
+                                                        className="text-gray-400 hover:text-red-500 p-2"
+                                                    >
+                                                        ✕
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <div className="relative">
+                                                    <div className="grid gap-3">
+                                                        {availableOffers.map(offer => {
+                                                            const isLocked = offer.is_new_user_exclusive && !isEligibleForOffer;
+                                                            return (
+                                                                <div
+                                                                    key={offer.id}
+                                                                    onClick={() => {
+                                                                        if (!isLocked) {
+                                                                            setSelectedCoupon(offer);
+                                                                            setCouponCode(offer.code || "");
+                                                                            toast.success(`${offer.code} applied!`);
+                                                                        } else {
+                                                                            toast.error("This offer is valid for new users only.");
+                                                                        }
+                                                                    }}
+                                                                    className={`p-3 rounded-xl border flex items-center gap-3 cursor-pointer transition-all ${isLocked
+                                                                        ? "opacity-60 bg-gray-50 border-gray-100 grayscale"
+                                                                        : "bg-white border-gray-200 hover:border-black hover:shadow-md"
+                                                                        }`}
+                                                                >
+                                                                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-white shrink-0 font-bold text-xs ${offer.bg_color || "bg-gray-800"}`}>
+                                                                        {offer.discount_percentage}%
+                                                                    </div>
+                                                                    <div className="flex-1">
+                                                                        <div className="flex justify-between items-center">
+                                                                            <span className="font-bold text-gray-900">{offer.code}</span>
+                                                                            {isLocked && <span className="text-[10px] bg-gray-200 text-gray-500 px-2 py-1 rounded-full">New User Only</span>}
+                                                                        </div>
+                                                                        <div className="text-xs text-gray-500 line-clamp-1">{offer.description}</div>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
+
+                                        {/* Price Breakdown */}
+                                        <div className="bg-gray-50 p-4 rounded-xl space-y-2 border border-dashed border-gray-300 md:col-span-2">
+                                            <div className="flex justify-between text-gray-600">
+                                                <span>Service Charge</span>
+                                                <span>₹{selectedIssue.price}</span>
+                                            </div>
+                                            {selectedCoupon && (
+                                                <div className="flex justify-between text-green-600 font-medium">
+                                                    <span>Coupon Discount ({selectedCoupon.code})</span>
+                                                    <span>- ₹{Math.round((selectedIssue.price || 0) * (selectedCoupon.discount_percentage / 100))}</span>
+                                                </div>
+                                            )}
+                                            <div className="flex justify-between text-lg font-bold border-t pt-2 mt-2">
+                                                <span>Final Estimate</span>
+                                                <span>
+                                                    ₹
+                                                    {selectedCoupon
+                                                        ? Math.round((selectedIssue.price || 0) * (1 - selectedCoupon.discount_percentage / 100))
+                                                        : selectedIssue.price}
+                                                    {selectedIssue.price_description && <span className="text-xs font-normal text-gray-500 ml-1">{selectedIssue.price_description}</span>}
+                                                </span>
+                                            </div>
+                                        </div>
+
                                     </div>
                                 </div>
 
@@ -373,7 +457,7 @@ function BookingContent() {
                                     disabled={submitting}
                                     className="w-full h-16 text-xl font-bold bg-black text-white hover:bg-gray-900 shadow-xl rounded-xl"
                                 >
-                                    {submitting ? "Processing..." : `Book for ${selectedIssue.is_inspection_required ? "Inspection" : `₹${selectedIssue.price}${selectedIssue.price_description ? '+' : ''}`}`}
+                                    {submitting ? "Processing..." : `Book Now`}
                                 </Button>
                             </motion.div>
                         )}

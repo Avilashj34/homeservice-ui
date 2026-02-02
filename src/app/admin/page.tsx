@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,20 +17,25 @@ import { STAFF_NOTIFICATIONS } from "@/lib/constants";
 import { Auth } from "@/lib/auth";
 
 export default function AdminPage() {
+    const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+
     const [bookings, setBookings] = useState<Booking[]>([]);
     const [statuses, setStatuses] = useState<Status[]>([]);
     const [services, setServices] = useState<Service[]>([]);
     const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
     const [loading, setLoading] = useState(true);
 
-    // Filters
-    const [search, setSearch] = useState("");
-    const [statusFilter, setStatusFilter] = useState("1");
-    const [dateFilter, setDateFilter] = useState("");
-    const [serviceFilter, setServiceFilter] = useState("");
-    const [assignedToFilter, setAssignedToFilter] = useState("");
+    // Initial Filters from URL
+    const [search, setSearch] = useState(searchParams.get("search") || "");
 
-    // Modals
+    // Derived filters from URL to ensure source of truth
+    const statusFilter = searchParams.get("status") || "1";
+    const dateFilter = searchParams.get("date") || "";
+    const serviceFilter = searchParams.get("service") || "";
+    const assignedToFilter = searchParams.get("assigned_to") || "";
+
     // Modals
     const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
     const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
@@ -54,35 +60,65 @@ export default function AdminPage() {
     const [bookingDate, setBookingDate] = useState("");
     const [bookingTime, setBookingTime] = useState("");
 
-    // Debounce search to avoid too many API calls
+    // Helper to update URL
+    const updateFilter = useCallback((key: string, value: string | null) => {
+        const params = new URLSearchParams(searchParams.toString());
+        if (value) {
+            params.set(key, value);
+        } else {
+            params.delete(key);
+        }
+        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    }, [searchParams, router, pathname]);
+
+    // Handle Search Debounce
     useEffect(() => {
         const timer = setTimeout(() => {
-            fetchData();
+            if (search !== (searchParams.get("search") || "")) {
+                updateFilter("search", search);
+            }
         }, 500);
         return () => clearTimeout(timer);
-    }, [search, statusFilter, dateFilter, serviceFilter, assignedToFilter]);
+    }, [search, updateFilter, searchParams]);
 
-    const fetchData = async () => {
+    // Fetch Metadata once
+    useEffect(() => {
+        fetchMetadata();
+    }, []);
+
+    // Fetch Bookings when URL params change
+    useEffect(() => {
+        fetchBookings();
+    }, [searchParams.toString()]);
+
+    const fetchMetadata = async () => {
         try {
-            setLoading(true);
-            const [bookingsData, statusesData, servicesData, teamMembersData] = await Promise.all([
-                MultiBookingAPI.getAll({
-                    search: search || undefined,
-                    status_id: statusFilter ? Number(statusFilter) : undefined,
-                    date: dateFilter || undefined,
-                    service_id: serviceFilter ? Number(serviceFilter) : undefined,
-                    assigned_to_id: assignedToFilter ? Number(assignedToFilter) : undefined
-                }),
+            const [statusesData, servicesData, teamMembersData] = await Promise.all([
                 StatusAPI.getAll(),
                 ServiceAPI.getAll(),
                 TeamAPI.getAll()
             ]);
-            setBookings(bookingsData);
             setStatuses(statusesData);
             setServices(servicesData);
             setTeamMembers(teamMembersData);
         } catch (err) {
-            console.error("Failed to fetch data", err);
+            console.error("Failed to fetch metadata");
+        }
+    };
+
+    const fetchBookings = async () => {
+        try {
+            setLoading(true);
+            const data = await MultiBookingAPI.getAll({
+                search: searchParams.get("search") || undefined,
+                status_id: searchParams.get("status") ? Number(searchParams.get("status")) : undefined,
+                date: searchParams.get("date") || undefined,
+                service_id: searchParams.get("service") ? Number(searchParams.get("service")) : undefined,
+                assigned_to_id: searchParams.get("assigned_to") ? Number(searchParams.get("assigned_to")) : undefined
+            });
+            setBookings(data);
+        } catch (err) {
+            console.error("Failed to fetch bookings", err);
         } finally {
             setLoading(false);
         }
@@ -93,7 +129,7 @@ export default function AdminPage() {
             await StatusAPI.create({ name: newStatus });
             setNewStatus("");
             setIsStatusModalOpen(false);
-            fetchData(); // Refresh
+            fetchMetadata(); // Refresh statuses
         } catch (e) {
             alert("Failed to create status");
         }
@@ -224,7 +260,7 @@ export default function AdminPage() {
                     </div>
                     <Button
                         variant="outline"
-                        onClick={fetchData}
+                        onClick={fetchBookings}
                         className="h-11 w-11 p-0 rounded-full border-gray-200 hover:bg-gray-100 flex-shrink-0"
                         title="Refresh Data"
                     >
@@ -235,13 +271,13 @@ export default function AdminPage() {
                     <Input
                         type="date"
                         value={dateFilter}
-                        onChange={(e) => setDateFilter(e.target.value)}
+                        onChange={(e) => updateFilter("date", e.target.value)}
                         className="w-auto h-11 border-gray-200 bg-gray-50"
                     />
                     <select
                         className="h-11 rounded-md border border-gray-200 bg-gray-50 px-4 text-sm outline-none focus:border-black transition-colors min-w-[140px]"
                         value={serviceFilter}
-                        onChange={(e) => setServiceFilter(e.target.value)}
+                        onChange={(e) => updateFilter("service", e.target.value)}
                     >
                         <option value="">All Services</option>
                         {services.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -249,13 +285,13 @@ export default function AdminPage() {
                     <select
                         className="h-11 rounded-md border border-gray-200 bg-gray-50 px-4 text-sm outline-none focus:border-black transition-colors min-w-[140px]"
                         value={assignedToFilter}
-                        onChange={(e) => setAssignedToFilter(e.target.value)}
+                        onChange={(e) => updateFilter("assigned_to", e.target.value)}
                     >
                         <option value="">All Team</option>
                         {teamMembers.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
                     </select>
                     <Button
-                        onClick={() => { setSearch(""); setStatusFilter("1"); setDateFilter(""); setServiceFilter(""); setAssignedToFilter(""); }}
+                        onClick={() => router.push(`${pathname}?status=1`)}
                         variant="outline"
                         className="h-11 border-gray-200 hover:bg-gray-100 hover:text-black"
                     >
@@ -270,7 +306,7 @@ export default function AdminPage() {
                 {statuses.map((s) => (
                     <button
                         key={s.id}
-                        onClick={() => setStatusFilter(s.id.toString())}
+                        onClick={() => updateFilter("status", s.id.toString())}
                         className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-bold border transition-all ${statusFilter === s.id.toString()
                             ? "bg-black text-white border-black"
                             : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
@@ -368,7 +404,7 @@ export default function AdminPage() {
                                             if (confirm("Are you sure you want to delete this booking? This action cannot be undone.")) {
                                                 try {
                                                     await MultiBookingAPI.delete(booking.id);
-                                                    fetchData();
+                                                    fetchBookings();
                                                 } catch (err) {
                                                     console.error("Failed to delete", err);
                                                     alert("Failed to delete booking");
