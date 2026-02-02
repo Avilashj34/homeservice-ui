@@ -13,6 +13,7 @@ import { StatusAPI } from "@/lib/api/status";
 import { TeamAPI } from "@/lib/api/team";
 import { Booking, Status, Service, BookingCreate, TeamMember } from "@/types";
 import { STAFF_NOTIFICATIONS } from "@/lib/constants";
+import { Auth } from "@/lib/auth";
 
 export default function AdminPage() {
     const [bookings, setBookings] = useState<Booking[]>([]);
@@ -178,10 +179,22 @@ export default function AdminPage() {
 
     return (
         <main className="flex min-h-screen flex-col p-4 md:p-8 bg-white text-black">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+            <div className="flex justify-between items-center mb-6">
                 <h1 className="text-3xl font-bold">Team Dashboard</h1>
+                <button
+                    onClick={() => Auth.logout()}
+                    className="text-sm font-medium text-red-600 hover:text-red-800 hover:underline underline-offset-4"
+                >
+                    Logout ({Auth.getUser()?.name})
+                </button>
+            </div>
+
+            <div className="flex flex-col md:flex-row justify-end items-start md:items-center mb-8 gap-4">
                 <div className="w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
                     <div className="flex space-x-2 whitespace-nowrap">
+                        <Button onClick={() => setIsBookingModalOpen(true)} className="bg-black text-white hover:bg-gray-800 flex-shrink-0">
+                            + New Booking
+                        </Button>
                         <Button onClick={() => setIsViewStatusModalOpen(true)} variant="outline" className="text-black border-black hover:bg-gray-100 flex-shrink-0">
                             View Statuses
                         </Button>
@@ -193,9 +206,6 @@ export default function AdminPage() {
                                 Manage Team
                             </Button>
                         </Link>
-                        <Button onClick={() => setIsBookingModalOpen(true)} className="bg-black text-white hover:bg-gray-800 flex-shrink-0">
-                            + New Booking
-                        </Button>
                     </div>
                 </div>
             </div>

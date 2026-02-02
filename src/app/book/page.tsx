@@ -58,6 +58,12 @@ function BookingContent() {
             if (s) {
                 setSelectedService(s);
                 setNewBooking(prev => ({ ...prev, service_id: s.id }));
+
+                // Auto-select first category
+                if (s.categories && s.categories.length > 0) {
+                    const sorted = [...s.categories].sort((a, b) => a.order - b.order);
+                    setSelectedCategory(sorted[0]);
+                }
             }
         }
     }, [services, preSelectedServiceId]);
@@ -201,17 +207,23 @@ function BookingContent() {
                     {/* 1. Service Selection */}
                     <div className="space-y-4">
                         <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider border-b pb-2">1. Select Trade</h3>
-                        <div className="flex flex-wrap gap-4">
+                        <div className="flex overflow-x-auto pb-4 gap-4 no-scrollbar -mx-4 px-4 md:flex-wrap md:overflow-visible md:pb-0 md:mx-0 md:px-0">
                             {services.map((s) => (
                                 <button
                                     type="button"
                                     key={s.id}
                                     onClick={() => {
                                         setSelectedService(s);
-                                        setSelectedCategory(undefined);
+                                        // Auto-select first category if available
+                                        if (s.categories && s.categories.length > 0) {
+                                            const sorted = [...s.categories].sort((a, b) => a.order - b.order);
+                                            setSelectedCategory(sorted[0]);
+                                        } else {
+                                            setSelectedCategory(undefined);
+                                        }
                                         setSelectedIssue(undefined);
                                     }}
-                                    className={`px-6 py-4 rounded-xl border-2 transition-all font-bold ${selectedService?.id === s.id
+                                    className={`px-6 py-4 rounded-xl border-2 transition-all font-bold whitespace-nowrap flex-shrink-0 ${selectedService?.id === s.id
                                         ? "bg-black text-white border-black shadow-lg"
                                         : "bg-white text-gray-600 border-gray-100 hover:border-gray-200 hover:bg-gray-50"
                                         }`}
@@ -224,52 +236,83 @@ function BookingContent() {
 
                     {/* 2. Category & Issue Selection (Dependent) */}
                     <AnimatePresence>
-                        {selectedService && (
+                        {selectedService && selectedService.categories && (
                             <motion.div
                                 initial={{ opacity: 0, height: 0 }}
                                 animate={{ opacity: 1, height: "auto" }}
                                 exit={{ opacity: 0, height: 0 }}
-                                className="space-y-8 overflow-hidden"
+                                className="space-y-6 overflow-hidden"
                             >
-                                {/* Categories */}
-                                <div className="space-y-4">
-                                    <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider border-b pb-2">2. What's the problem?</h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {selectedService.categories?.sort((a, b) => a.order - b.order).map((cat) => (
-                                            <div key={cat.id} className="space-y-3">
-                                                <h4 className="font-bold text-gray-400 text-xs uppercase">{cat.name}</h4>
-                                                <div className="space-y-2">
-                                                    {cat.issues.map((issue) => (
-                                                        <div
-                                                            key={issue.id}
-                                                            onClick={() => {
-                                                                setSelectedCategory(cat);
-                                                                setSelectedIssue(issue);
-                                                            }}
-                                                            className={`p-4 rounded-xl border cursor-pointer transition-all flex justify-between items-center group ${selectedIssue?.id === issue.id
-                                                                ? "bg-black text-white border-black shadow-md"
-                                                                : "bg-white border-gray-100 hover:border-black"
-                                                                }`}
-                                                        >
-                                                            <div>
-                                                                <div className="font-bold">{issue.name}</div>
-                                                                {issue.is_inspection_required ? (
-                                                                    <div className={`text-xs ${selectedIssue?.id === issue.id ? "text-gray-300" : "text-blue-600"} font-medium`}>
-                                                                        Inspection Required
-                                                                    </div>
-                                                                ) : (
-                                                                    <div className={`text-xs ${selectedIssue?.id === issue.id ? "text-gray-300" : "text-gray-500"}`}>
-                                                                        {issue.price_description || `starts from ₹${issue.price}`}
-                                                                    </div>
-                                                                )}
+                                <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider border-b pb-2">2. What's the problem?</h3>
+
+                                {/* Category Tabs - Horizontal Scroll */}
+                                <div className="flex overflow-x-auto pb-2 gap-3 no-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
+                                    {selectedService.categories.sort((a, b) => a.order - b.order).map((cat) => (
+                                        <button
+                                            key={cat.id}
+                                            type="button"
+                                            onClick={() => {
+                                                setSelectedCategory(cat);
+                                                setSelectedIssue(undefined); // Reset issue when category changes
+                                            }}
+                                            className={`whitespace-nowrap px-5 py-2.5 rounded-full text-sm font-bold transition-all border ${selectedCategory?.id === cat.id
+                                                ? "bg-black text-white border-black shadow-md"
+                                                : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"
+                                                }`}
+                                        >
+                                            {cat.name}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {/* Issues List for Selected Category */}
+                                <div className="min-h-[200px]">
+                                    {selectedCategory ? (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {selectedCategory.issues.map((issue) => (
+                                                <div
+                                                    key={issue.id}
+                                                    onClick={() => {
+                                                        setSelectedIssue(issue);
+                                                    }}
+                                                    className={`p-4 rounded-xl border cursor-pointer transition-all flex justify-between items-center group ${selectedIssue?.id === issue.id
+                                                        ? "bg-black text-white border-black shadow-md scale-[1.02]"
+                                                        : "bg-white border-gray-100 hover:border-black hover:bg-gray-50"
+                                                        }`}
+                                                >
+                                                    <div className="flex gap-4 items-center">
+                                                        {/* Optional: Add image preview here if we want more visual pop */}
+                                                        {issue.image_url && (
+                                                            <div className="w-12 h-12 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0">
+                                                                <img src={issue.image_url} alt={issue.name} className="w-full h-full object-cover" />
                                                             </div>
-                                                            {selectedIssue?.id === issue.id && <span>✓</span>}
+                                                        )}
+                                                        <div>
+                                                            <div className="font-bold">{issue.name}</div>
+                                                            {issue.is_inspection_required ? (
+                                                                <div className={`text-xs ${selectedIssue?.id === issue.id ? "text-gray-300" : "text-blue-600"} font-medium`}>
+                                                                    Inspection Required
+                                                                </div>
+                                                            ) : (
+                                                                <div className={`text-xs ${selectedIssue?.id === issue.id ? "text-gray-300" : "text-gray-500"}`}>
+                                                                    {issue.price_description ? (
+                                                                        <span>starts from ₹{issue.price} {issue.price_description}</span>
+                                                                    ) : (
+                                                                        <span>₹{issue.price}</span>
+                                                                    )}
+                                                                </div>
+                                                            )}
                                                         </div>
-                                                    ))}
+                                                    </div>
+                                                    {selectedIssue?.id === issue.id && (
+                                                        <span className="bg-white text-black w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">✓</span>
+                                                    )}
                                                 </div>
-                                            </div>
-                                        ))}
-                                    </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="text-gray-400 text-center py-10 italic">Select a category above to view issues</div>
+                                    )}
                                 </div>
                             </motion.div>
                         )}

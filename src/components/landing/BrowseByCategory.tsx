@@ -73,7 +73,13 @@ export function BrowseByCategory() {
                                         <div className="flex items-center gap-4">
                                             {issue.image_url ? (
                                                 <div className="w-16 h-16 relative rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-                                                    <Image src={`http://localhost:8000/api/${issue.image_url.startsWith('/') ? issue.image_url.slice(1) : issue.image_url}`} alt={issue.name} fill className="object-cover" />
+                                                    <Image
+                                                        src={issue.image_url}
+                                                        alt={issue.name}
+                                                        fill
+                                                        className="object-cover"
+                                                        unoptimized
+                                                    />
                                                 </div>
                                             ) : (
                                                 <div className="w-16 h-16 bg-gray-100 rounded-lg flex-shrink-0" />
@@ -94,7 +100,13 @@ export function BrowseByCategory() {
                                 <div key={issue.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex items-center gap-4 hover:shadow-md transition-shadow">
                                     {issue.image_url ? (
                                         <div className="w-16 h-16 relative rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-                                            <Image src={`http://localhost:8000/api/${issue.image_url}`} alt={issue.name} fill className="object-cover" />
+                                            <Image
+                                                src={issue.image_url}
+                                                alt={issue.name}
+                                                fill
+                                                className="object-cover"
+                                                unoptimized // Needed for external S3 URLs unless configured in next.config.js
+                                            />
                                         </div>
                                     ) : (
                                         <div className="w-16 h-16 bg-gray-100 rounded-lg flex-shrink-0" />

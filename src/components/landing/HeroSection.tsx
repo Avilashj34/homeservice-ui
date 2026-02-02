@@ -22,7 +22,6 @@ export function HeroSection() {
             {/* Background Image with Light Gradient Overlay */}
             <div
                 className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
-                style={{ backgroundImage: "url('/images/landing/hero_bg_1769921683199.png')" }}
             >
                 {/* White gradient fade for light theme */}
                 <div className="absolute inset-0 bg-gradient-to-b from-white/90 via-white/70 to-white/90" />
@@ -79,26 +78,15 @@ export function HeroSection() {
                     ))}
                 </motion.div>
 
-                <motion.div
+                {/* <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 1 }}
                     className="mt-16"
                 >
                     <p className="text-sm text-gray-400 font-bold tracking-widest uppercase text-[10px]">Or browse all <Link href="/services" className="underline hover:text-black transition-colors">services</Link></p>
-                </motion.div>
+                </motion.div> */}
             </div>
-
-            {/* Scroll Indicator */}
-            <motion.div
-                animate={{ y: [0, 10, 0] }}
-                transition={{ repeat: Infinity, duration: 2 }}
-                className="absolute bottom-10 left-1/2 -translate-x-1/2 text-gray-400"
-            >
-                <div className="w-6 h-10 border-2 border-gray-300 rounded-full flex justify-center pt-2">
-                    <div className="w-1.5 h-1.5 bg-gray-400 rounded-full" />
-                </div>
-            </motion.div>
         </section>
     );
 }

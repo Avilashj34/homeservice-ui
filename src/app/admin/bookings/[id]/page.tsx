@@ -12,6 +12,7 @@ import { Booking, TeamMember } from "@/types";
 import { TeamAPI } from "@/lib/api/team";
 import { CommentsAPI, Comment } from "@/lib/api/comments";
 import { STAFF_NOTIFICATIONS } from "@/lib/constants";
+import { Auth } from "@/lib/auth";
 
 interface BookingDetail {
     id: number;
@@ -160,7 +161,7 @@ export default function BookingDetailPage() {
         try {
             await CommentsAPI.create(Number(id), {
                 text: newCommentText,
-                author_name: "Admin",
+                author_name: Auth.getUser()?.name || "Admin",
                 notify_phones: commentNotifyPhones
             });
             setNewCommentText("");
@@ -192,6 +193,9 @@ export default function BookingDetailPage() {
                         <span className="px-4 py-2 bg-black text-white rounded-full text-sm font-bold w-full md:w-auto text-center block">
                             {booking.status?.name || "Unknown Status"}
                         </span>
+                        <Button onClick={() => Auth.logout()} variant="ghost" className="text-red-500 hover:bg-red-50">
+                            Logout
+                        </Button>
                     </div>
                 </div>
 
