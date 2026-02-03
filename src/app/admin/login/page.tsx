@@ -7,11 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Auth } from "@/lib/auth";
 import axios from "axios";
 import { toast } from "sonner"; // If sonner is not installed, we'll use a simple alert fallback or fix imports later. user seems to have sonner used elsewhere.
-
-// Base URL handling - aligning with other API calls (assuming proxy or direct)
-// admin page uses relative paths or imports API clients. We'll use axios directly for now or create an API method if preferred.
-// Let's use direct axios with the same base URL logic as other files if possible, or relative `/api`.
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+import { API_BASE_URL } from "@/lib/constants";
 
 export default function LoginPage() {
     const router = useRouter();
