@@ -30,7 +30,7 @@ export default function LoginPage() {
             }
 
             // Call API
-            const response = await axios.post(`${API_BASE_URL}/auth/login`, {
+            const response = await axios.post(`${API_BASE_URL}auth/login`, {
                 phone: parseInt(phone),
                 otp: otp
             });
