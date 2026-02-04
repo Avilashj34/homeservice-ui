@@ -216,8 +216,8 @@ export default function BookingDetailPage() {
                                     <p className="text-base md:text-lg font-medium">{booking.customer_phone}</p>
                                 </div>
                                 <div className="sm:col-span-2">
-                                    <label className="text-xs font-bold text-gray-400 uppercase block mb-1">Service Required</label>
-                                    <p className="text-base md:text-lg font-medium">{booking.service_name || `Service ID: ${booking.service_id}`}</p>
+                                    <label className="text-xs font-bold text-gray-400 uppercase block mb-1">Issue Detail</label>
+                                    <p className="text-base md:text-lg font-medium">{booking.comments || "No Issue detail provided."}</p>
                                 </div>
                                 <div className="sm:col-span-2">
                                     <label className="text-xs font-bold text-gray-400 uppercase block mb-1">Appointment Time</label>
@@ -429,57 +429,6 @@ export default function BookingDetailPage() {
                             </CardContent>
                         </Card>
 
-                        {booking.user_comment && (
-                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-900">
-                                <strong className="block text-xs uppercase text-blue-400 mb-1">Customer Instructions:</strong>
-                                {booking.user_comment}
-                            </div>
-                        )}
-
-                        <Card className="border-gray-200">
-                            <CardHeader className="bg-gray-100/50 border-b border-gray-100 p-4 md:p-6 flex flex-row items-center justify-between">
-                                <CardTitle className="text-base">Internal Team Comments</CardTitle>
-                                <span className="text-xs bg-gray-200 px-2 py-1 rounded-full text-gray-600 font-bold">{comments.length}</span>
-                            </CardHeader>
-                            <CardContent className="p-4 md:p-6 space-y-4">
-                                <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                                    {comments.length === 0 ? (
-                                        <div className="text-center py-8 text-gray-400 text-sm">No internal comments yet.</div>
-                                    ) : (
-                                        comments.map((comment, index) => (
-                                            <div key={comment.id} className="flex gap-3 text-sm">
-                                                <div className="h-8 w-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xs shrink-0 uppercase border border-blue-200">
-                                                    {comment.author_name.charAt(0)}
-                                                </div>
-                                                <div className="bg-gray-50 p-3 rounded-lg border border-gray-100 w-full hover:bg-white transition-colors">
-                                                    <div className="flex justify-between items-center mb-1">
-                                                        <span className="font-bold text-gray-900 text-xs">{comment.author_name}</span>
-                                                        <span className="text-[10px] text-gray-400">{new Date(comment.created_at).toLocaleString()}</span>
-                                                    </div>
-                                                    <p className="text-gray-700 leading-relaxed">{comment.text}</p>
-                                                </div>
-                                            </div>
-                                        ))
-                                    )}
-                                </div>
-                                <div className="pt-4 border-t border-gray-100 flex gap-2">
-                                    <Input
-                                        placeholder="Type an internal note..."
-                                        value={newCommentText}
-                                        onChange={(e) => setNewCommentText(e.target.value)}
-                                        className="bg-white"
-                                        onKeyDown={async (e) => {
-                                            if (e.key === 'Enter' && newCommentText.trim()) {
-                                                await handleAddComment();
-                                            }
-                                        }}
-                                    />
-                                    <Button onClick={handleAddComment} disabled={!newCommentText.trim()} className="bg-black hover:bg-gray-800 text-white shadow-sm shrink-0">
-                                        Post
-                                    </Button>
-                                </div>
-                            </CardContent>
-                        </Card>
                     </div>
                 </div>
             </div>
@@ -563,10 +512,10 @@ export default function BookingDetailPage() {
                     <div className="space-y-4 rounded-xl bg-gray-50 p-4 border border-gray-100">
                         <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Additional Notes</h4>
                         <div>
-                            <label className="text-xs font-semibold text-gray-500 mb-1 block">COMMENTS</label>
+                            <label className="text-xs font-semibold text-gray-500 mb-1 block">ISSUE DETAILS</label>
                             <textarea
                                 className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 bg-white"
-                                placeholder="Add any special instructions or notes..."
+                                placeholder="Add issue in details...."
                                 value={updateForm.comments || ''}
                                 onChange={e => setUpdateForm({ ...updateForm, comments: e.target.value })}
                             />

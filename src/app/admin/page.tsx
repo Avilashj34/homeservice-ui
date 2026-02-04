@@ -536,12 +536,12 @@ export default function AdminPage() {
 
                     {/* Comments */}
                     <div className="space-y-4 rounded-xl bg-gray-50 p-4 border border-gray-100">
-                        <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Additional Notes</h4>
+                        <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Issue details</h4>
                         <div>
-                            <label className="text-xs font-semibold text-gray-500 mb-1 block">COMMENTS</label>
+                            <label className="text-xs font-semibold text-gray-500 mb-1 block"></label>
                             <textarea
                                 className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 bg-white"
-                                placeholder="Add any special instructions or notes..."
+                                placeholder="Describe the issue in detail..."
                                 value={newBooking.comments || ''}
                                 onChange={e => setNewBooking({ ...newBooking, comments: e.target.value })}
                             />

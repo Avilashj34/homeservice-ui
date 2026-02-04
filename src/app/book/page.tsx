@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ServiceAPI } from "@/lib/api/services";
 import { OfferAPI, Offer } from "@/lib/api/offers";
+import { API_BASE_URL } from "@/lib/constants";
 import { BookingCreate, Service, ServiceCategory, ServiceIssue } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -89,7 +90,7 @@ function BookingContent() {
         if (newBooking.customer_phone && newBooking.customer_phone.toString().length >= 10) {
             try {
                 // Check eligibility
-                const res = await axios.get(`http://localhost:8000/bookings/check-eligibility?phone=${newBooking.customer_phone}`);
+                const res = await axios.get(`${API_BASE_URL}bookings/check-eligibility?phone=${newBooking.customer_phone}`);
                 if (res.data.is_new_user) {
                     setIsEligibleForOffer(true);
 

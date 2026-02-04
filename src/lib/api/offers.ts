@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = "http://localhost:8000";
+import { API_BASE_URL } from '../constants';
 
 export interface Offer {
     id: number;
@@ -17,7 +17,7 @@ export interface Offer {
 export const OfferAPI = {
     getAll: async (): Promise<Offer[]> => {
         try {
-            const response = await axios.get(`${API_BASE_URL}/offers/`);
+            const response = await axios.get(`${API_BASE_URL}offers/`);
             return response.data;
         } catch (error) {
             console.error("Failed to fetch offers", error);
