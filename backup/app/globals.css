@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  
+  /* Home Service Custom Colors */
+  --color-hs-black: #0B2B4F;
+  --color-hs-primary-50: #f0f9ff;
+  --color-hs-primary-100: #e0f2fe;
+  --color-hs-primary-500: #0ea5e9;
+  --color-hs-primary-600: #0284c7;
+  --color-hs-primary-700: #0369a1;
+
+  --animate-marquee: marquee 25s linear infinite;
+  
+  @keyframes marquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+}
+
+/* Utility classes mapping if needed, or just use arbitrary values. 
+   But since we use standard tailwind classes in the code like 'text-primary-600', 
+   we might need to map them if they don't exist in default palette or if we want to override.
+   Tailwind 4 uses --color-* variables for theme.
+   
+   To override 'black' and 'primary', we should map them.
+*/
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  
+  /* Define the color values for the theme usage */
+  --color-black: #0B2B4F; 
+  --color-primary-50: #f0f9ff;
+  --color-primary-100: #e0f2fe;
+  --color-primary-500: #0ea5e9;
+  --color-primary-600: #0284c7;
+  --color-primary-700: #0369a1;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}

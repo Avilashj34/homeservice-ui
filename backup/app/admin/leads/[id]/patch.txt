@@ -1,0 +1,89 @@
+                    </div>
+
+                    <div>
+                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">Next Follow-up</label>
+                        <div className="font-medium text-slate-900">
+                            {can("edit_leads") || can("update_lead_status") ? (
+                                <input 
+                                    type="datetime-local" 
+                                    className="text-sm bg-white border border-slate-300 rounded px-2 py-1 w-full max-w-[200px]"
+                                    value={lead?.next_follow_up ? new Date(lead.next_follow_up).toISOString().slice(0, 16) : ""}
+                                    onChange={async (e) => {
+                                        if (!lead) return;
+                                        const newVal = e.target.value ? new Date(e.target.value).toISOString() : null;
+                                        setLead({ ...lead, next_follow_up: newVal }); // Optimistic
+                                        try {
+                                            await LeadsAPI.update(lead.id, { next_follow_up: newVal }); 
+                                            fetchData();
+                                        } catch(err) {
+                                            console.error(err);
+                                            fetchData(); // Revert
+                                        }
+                                    }}
+                                />
+                            ) : (
+                                <span className="text-slate-600">
+                                    {lead?.next_follow_up ? new Date(lead.next_follow_up).toLocaleString() : "Not scheduled"}
+                                </span>
+                            )} 
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">Assigned Agent</label>
+                        <div className="font-medium text-slate-900">
+                            {can("edit_leads") || can("update_lead_status") ? (
+                                <Select onValueChange={handleAssignAgent} value={lead.assigned_to_id?.toString() || "0"} disabled={assigningAgent}>
+                                    <SelectTrigger className="w-full h-9 text-sm bg-white border border-slate-300 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2">
+                                        <SelectValue placeholder="Unassigned" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-white border border-slate-300 rounded-md text-black">
+                                        <SelectItem value="0" className="text-slate-500">Unassigned</SelectItem>
+                                        {teamMembers.map((m) => (
+                                            <SelectItem key={m.id} value={m.id.toString()}>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center text-[10px] font-bold">
+                                                        {m.name[0]}
+                                                    </div>
+                                                    <span className="font-medium text-black">{m.name}</span>
+                                                    <span className="text-xs text-slate-400">({m.role})</span>
+                                                </div>
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            ) : (
+                                lead.assigned_to ? (
+                                    <span className="flex items-center gap-2">
+                                        <div className="w-6 h-6 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs font-bold">
+                                            {lead.assigned_to[0]}
+                                        </div>
+                                        {lead.assigned_to}
+                                    </span>
+                                ) : (
+                                    <span className="text-slate-400 italic">Unassigned</span>
+                                )
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Assigned Technician / Repairman */}
+                    {(userRole === 'admin' || userRole === 'sales') && (
+                        <div>
+                            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">Assigned Technician</label>
+                            <div className="font-medium text-slate-900">
+                                <Select onValueChange={handleAssignRepairman} value={lead.repairman_id?.toString()} disabled={assigningRepairman}>
+                                    <SelectTrigger
+                                        className="w-full h-9 text-sm bg-white border border-slate-300 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2"
+                                        style={{ backgroundColor: 'white', color: 'black' }}
+                                    >
+                                        <SelectValue placeholder="Select Technician" className="text-black" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-white border border-slate-300 rounded-md text-black">
+                                        <SelectItem value="0" disabled={true} className="text-slate-400">Select Technician</SelectItem>
+                                        {repairmen.map((r) => (
+                                            <SelectItem key={r.id} value={r.id.toString()}>
+                                                <div className="flex items-center gap-2 text-black">
+                                                    <span className="font-medium">{r.name}</span>
+                                                    <span className="text-xs text-slate-400">({r.service_type})</span>
+                                                </div>
